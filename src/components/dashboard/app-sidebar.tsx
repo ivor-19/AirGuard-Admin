@@ -68,6 +68,11 @@ const data = {
           url: "/admin/accounts",
           isActive: false,
         },
+        {
+          title: "Manage Issues",
+          url: "/admin/issue",
+          isActive: false,
+        },
       ],
     },
   ],

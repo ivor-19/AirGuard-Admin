@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { TrendingUp, Users } from "lucide-react"
+import { ShieldQuestion, TrendingUp } from "lucide-react"
 import { Label, Pie, PieChart } from "recharts"
 import axios from "axios"
 
@@ -106,7 +106,7 @@ export function UsersStatus({ refresh }: { refresh: number }) {
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
+              <ShieldQuestion className="h-5 w-5" />
               Users Status Overview
             </CardTitle>
             <CardDescription className="text-xs">Distribution of user accounts by status</CardDescription>
