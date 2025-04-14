@@ -26,6 +26,7 @@ interface Issue {
   sender_id: string
   sender_accountId: string
   sender_name: string
+  email: string
   title: string
   description: string
   status: Status
@@ -204,7 +205,9 @@ export default function IssueTracker() {
                     <CardTitle>{issue.title}</CardTitle>
                     <CardDescription className="mt-1">
                       Reported by {issue.sender_name} on {issue.created_at}
+                     
                     </CardDescription>
+                    <span className="text-xs opacity-50">{issue.email}</span>
                   </div>
                   <Badge className={`${getStatusColor(issue.status)} flex items-center gap-1`}>
                     {getStatusIcon(issue.status)}

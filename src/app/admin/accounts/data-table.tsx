@@ -46,7 +46,7 @@ import { useEffect, useState } from "react"
 
 import { columns } from "./columns"
 import { User } from "./columns"
-import { CalendarDays, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, CircleCheck, CircleX, FilterX, IdCard, Import, Loader, Loader2, Mail, PlusCircle, RefreshCcw, RefreshCw, Settings2, Shield, ShieldAlert, ShieldCheck, User2 } from "lucide-react"
+import { CalendarDays, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, CircleCheck, CircleX, FilterX, IdCard, Import, ListFilter, Loader, Loader2, Mail, PlusCircle, RefreshCcw, RefreshCw, Settings2, Shield, ShieldAlert, ShieldCheck, User2 } from "lucide-react"
 import axios from "axios"
 import { toast } from "sonner"
 import DeleteModal from "@/components/modals/DeleteModal"
@@ -335,7 +335,7 @@ export default function DataTable() {
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="outline" className="ml-2 border-dashed bg-transparent">
-                          <PlusCircle className="mr-1" /> Status 
+                          <ListFilter className="mr-1" /> Status 
                           {table.getColumn("status")?.getFilterValue() ? (
                             <div className="flex gap-2">
                               <span className="font-thin text-gray-500">|</span>
