@@ -8,9 +8,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
-import { AlertCircle, CheckCircle, Clock, MessageSquare } from "lucide-react"
+import { CheckCircle, Clock, Loader, MessageSquare } from "lucide-react"
 
-type Status = "Open" | "Resolved" | "Closed"
+type Status = "Pending" | "Resolved" | "Closed"
 
 interface Reply {
   id: string
@@ -133,7 +133,7 @@ export default function IssueTracker() {
       // Revert optimistic update
       setIssues(prev => prev.map(issue => 
         issue._id === issueId
-          ? { ...issue, status: issues.find(i => i._id === issueId)?.status || "Open" }
+          ? { ...issue, status: issues.find(i => i._id === issueId)?.status || "Pending" }
           : issue
       ));
     }
@@ -141,16 +141,16 @@ export default function IssueTracker() {
 
   const getStatusIcon = (status: Status) => {
     switch (status.toLowerCase()) {
-      case "open": return <AlertCircle className="h-4 w-4" />
+      case "pending": return <Loader className="h-4 w-4" />
       case "resolved": return <CheckCircle className="h-4 w-4" />
       case "closed": return <Clock className="h-4 w-4" />
-      default: return <AlertCircle className="h-4 w-4" />
+      default: return <Loader className="h-4 w-4" />
     }
   }
 
   const getStatusColor = (status: Status) => {
     switch (status.toLowerCase()) {
-      case "open": return "bg-red-100 text-red-800 hover:bg-red-200"
+      case "pending": return "bg-red-100 text-red-800 hover:bg-red-200"
       case "resolved": return "bg-green-100 text-green-800 hover:bg-green-200"
       case "closed": return "bg-gray-100 text-gray-800 hover:bg-gray-200"
       default: return "bg-red-100 text-red-800 hover:bg-red-200"
@@ -182,7 +182,7 @@ export default function IssueTracker() {
       <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="mb-6">
         <TabsList className="grid grid-cols-4 w-full max-w-md">
           <TabsTrigger value="all">All</TabsTrigger>
-          <TabsTrigger value="open">Open</TabsTrigger>
+          <TabsTrigger value="pending">Pending</TabsTrigger>
           <TabsTrigger value="resolved">Resolved</TabsTrigger>
           <TabsTrigger value="closed">Closed</TabsTrigger>
         </TabsList>
@@ -197,7 +197,7 @@ export default function IssueTracker() {
           </Card>
         ) : (
           filteredIssues.reverse().map((issue) => (
-            <Card key={issue._id} className="overflow-hidden">
+            <Card key={issue._id} className="overflow-hidden bg-[var(--gray-counter)]">
               <CardHeader className="pb-3">
                 <div className="flex justify-between items-start">
                   <div>
@@ -251,11 +251,11 @@ export default function IssueTracker() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => updateStatus(issue._id, "Open")}
-                    disabled={issue.status === "Open"}
+                    onClick={() => updateStatus(issue._id, "Pending")}
+                    disabled={issue.status === "Pending"}
                     className="text-xs"
                   >
-                    Mark as Open
+                    Mark as Pending
                   </Button>
                   <Button
                     variant="outline"
