@@ -27,9 +27,10 @@ interface User {
 interface AuthContextType {
   userCred: User | null;
   token: string | null;
-  login: (user: User, token: string) => void;
+  login: (user: User, token?: string) => void;
   logout: () => void;
   isAuthenticated: boolean;
+  isStaticAdmin: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -49,13 +50,14 @@ interface AuthProviderProps {
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [userCred, setUserCred] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [sessionActive, setSessionActive] = useState(false);
+  const [isStaticAdmin, setIsStaticAdmin] = useState(false);
 
   const router = useRouter();
 
-  // Check for stored token on load
+  // Check for stored token on load (skips for static admin)
   useEffect(() => {
     const checkAuth = () => {
       const storedUser = localStorage.getItem('user');
@@ -66,6 +68,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setUserCred(parsedUser);
         setToken(storedToken);
         setIsAuthenticated(true);
+        setIsStaticAdmin(false);
         
         // Handle redirect based on user role and current path
         const pathname = window.location.pathname;
@@ -76,22 +79,41 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           setTimeout(() => {
             setSessionActive(false);
             router.replace(redirectPath);
-            
-          }, 3000)
-          
+          }, 3000);
         }
       }
-      
     };
     
     checkAuth();
   }, [router]);
 
-  const login = (user: User, token: string) => {
-    setUserCred(user);
-    setToken(token);
-    setIsAuthenticated(true);
+  // Handle static admin logout on page unload
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (isStaticAdmin) {
+        logout();
+      }
+    };
 
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [isStaticAdmin]);
+
+  const login = (user: User, token?: string) => {
+    setUserCred(user);
+    setIsAuthenticated(true);
+    
+    if (!token) {
+      // Static admin login (no token)
+      setIsStaticAdmin(true);
+      return;
+    }
+    
+    // Normal user login
+    setToken(token);
+    setIsStaticAdmin(false);
     localStorage.setItem('user', JSON.stringify(user));
     localStorage.setItem('token', token);
   }
@@ -100,27 +122,33 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setUserCred(null);
     setToken(null);
     setIsAuthenticated(false);
-
+    setIsStaticAdmin(false);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
   };
 
   return (
     <>
-    <AlertDialog open={sessionActive} onOpenChange={setSessionActive}>
-      <AlertDialogContent className='font-geist flex items-center justify-center'>
-        <AlertDialogHeader className='flex flex-col items-center justify-center'>
-          <Loader2 className='animate-spin'/>
-          <AlertDialogTitle className='text-sm'>Your session is still active. Redirecting now...</AlertDialogTitle>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-    <AuthContext.Provider value={{ userCred, token, login, logout, isAuthenticated }}>
-      {children}
-    </AuthContext.Provider>
+      <AlertDialog open={sessionActive} onOpenChange={setSessionActive}>
+        <AlertDialogContent className='font-geist flex items-center justify-center'>
+          <AlertDialogHeader className='flex flex-col items-center justify-center'>
+            <Loader2 className='animate-spin'/>
+            <AlertDialogTitle className='text-sm'>Your session is still active. Redirecting now...</AlertDialogTitle>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AuthContext.Provider value={{ 
+        userCred, 
+        token, 
+        login, 
+        logout, 
+        isAuthenticated,
+        isStaticAdmin
+      }}>
+        {children}
+      </AuthContext.Provider>
     </>
   );
 };

@@ -18,7 +18,6 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -35,37 +34,27 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
-import { CSSProperties, useEffect, useState } from "react"
 
-import { columns } from "./columns"
+import { useEffect, useState } from "react"
+
+import { archiveColumns } from "./columns"
 import { User } from "./columns"
-import { CalendarDays, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, CircleCheck, CircleX, FilterX, IdCard, Import, Loader2, Mail, PlusCircle, RefreshCcw, RefreshCw, Settings2, Shield, ShieldAlert, ShieldCheck, User2 } from "lucide-react"
+import { CalendarDays, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, CircleCheck, CircleX, FilterX, IdCard, Import, KeyRound, ListFilter, Loader, Loader2, Mail, PlusCircle, RefreshCcw, RefreshCw, Settings2, Shield, ShieldAlert, ShieldCheck, User2 } from "lucide-react"
 import axios from "axios"
-import MoonLoader from "react-spinners/MoonLoader";
 import { toast } from "sonner"
 import DeleteModal from "@/components/modals/DeleteModal"
 import { Skeleton } from "@/components/ui/skeleton"
 import * as z from "zod"
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form"
-import { AddUserModal } from "@/components/modals/AddUserModal"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { UsersCount } from "@/components/charts/UsersCount"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { UsersStatus } from "@/components/charts/UsersStatus"
+import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-
-// interface DataTableProps {
-//   data: User[]
-// }
+import RestoreModal from "@/components/modals/RestoreModal"
 
 const FormSchema = z.object({
   accountId: z.string().min(10, {message: "Account ID must have atleast 10 characters"}),
@@ -77,16 +66,14 @@ const FormSchema = z.object({
 
 type FormData = z.infer<typeof FormSchema>;
 
-export default function DataTable() {
-  const { register, handleSubmit, formState: {errors}, reset, setError, setValue } = useForm<FormData>({
+export default function ArchiveDataTable() {
+  const { formState: {errors}, setValue } = useForm<FormData>({
     resolver: zodResolver(FormSchema),
   })
   const [refresh, setRefresh] = useState(0);
 
   const [openEditDialog, setOpenEditDialog] = useState(false);
-  const [openAddDialog, setOpenAddDialog] = useState(false);
   const [openViewDialog, setOpenViewDialog] = useState(false);
-  const [userExists, setUserExists] = useState(false);
   const [loadingTable, setLoadingTable] = useState(true);
 
   const [sorting, setSorting] = React.useState<SortingState>([])
@@ -97,72 +84,14 @@ export default function DataTable() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [restoreModalOpen, setRestoreModalOpen] = useState(false);
 
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [totalPage, setTotalPage] = useState(1);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [lastPage, setLastPage] = useState(1);
 
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const [isUploading, setIsUploading] = useState(false);
-
-  const handleImportClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-  
-    // Validate file type
-    if (!file.name.match(/\.(xlsx|xls|csv)$/)) {
-      toast.error('Please upload an Excel file (.xlsx, .xls)');
-      return;
-    }
-  
-    setIsUploading(true);
-    
+  const fetchUsers = async () => {
     try {
-      const formData = new FormData();
-      // Note: The field name must match what your backend expects ('excelFile')
-      formData.append('excelFile', file);
-  
-      const response = await axios.post(
-        'https://air-quality-back-end-v2.vercel.app/excel/uploadExcel', 
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
-  
-      console.log('Upload successful:', response.data);
-      toast.success(response.data.message || 'Excel file imported successfully!');
-      fetchUsers(currentPage, table.getState().pagination.pageSize);
-    } catch (error) {
-      console.error('Error uploading file:', error);
-      
-      if (axios.isAxiosError(error)) {
-        toast.error(error.response?.data?.message || 'Failed to import Excel file');
-      } else {
-        toast.error('Failed to import Excel file');
-      }
-    } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
-  };
-
-  const fetchUsers = async (page: number, limit: number) => {
-    try {
-      const response = await axios.get(`https://air-quality-back-end-v2.vercel.app/users?page=${page}&limit=${limit}`);
-      setTotalPage(response.data.pagination.total);
-      setUsers(response.data.users);
-      setCurrentPage(response.data.pagination.current_page); // Update current page
-      setLastPage(response.data.pagination.last_page); // Update last page
+      const response = await axios.get(`https://air-quality-back-end-v2.vercel.app/users/archive`);
+      setUsers([...response.data.users].reverse());
       setLoadingTable(false);
       setRefresh(prev => prev + 1);
     } catch (error) {
@@ -172,60 +101,30 @@ export default function DataTable() {
   }
 
   useEffect(() => {
-    fetchUsers(1, 10); // Fetch first page with default limit
+    fetchUsers();
   }, []);
 
   const handleUserSelection = (user: User) => {
-    // console.log("Selected User for Edit:", user);
     setOpenEditDialog(true);
     setSelectedUser(user);
   };
 
   const handleViewCompleteDetails = (user: User) => {
-    // console.log("Selected User for Edit:", user);
     setOpenViewDialog(true);
     setSelectedUser(user);
   };
 
-  useEffect(() => {
-    console.log("selected user:", selectedUser);
-    if (selectedUser) {
-      setValue("accountId", selectedUser.account_id);
-      setValue("name", selectedUser.username);
-      setValue("email", selectedUser.email);
-      setValue("role", selectedUser.role as "Admin" | "Student");
-      setValue("status", selectedUser.status as "Available" | "Blocked");
-    }
-  }, [selectedUser, setValue]); 
-
-  const editUser = async (data: FormData) => {
-    setLoading(true);
-    const editedUser = {account_id: data.accountId, username: data.name, email: data.email, role: data.role, status: data.status}
-    try {
-      const response = await axios.post(`https://air-quality-back-end-v2.vercel.app/users/editUser/${selectedUser?._id}`, editedUser)
-      console.log("Edit success", response.data.users)
-      setOpenEditDialog(false);
-      setLoading(false);
-      toast.success("Edit successfully!")
-      fetchUsers(currentPage, table.getState().pagination.pageSize);
-    } catch (error) {
-      console.error("Error editing user", error)
-    }
-  }  
   
   const deleteUser = async () => {
     setLoading(true);
     try {
       const selectedRows = table.getSelectedRowModel().rows;
       for (const row of selectedRows) {
-        const userId = row.original._id; // Access the user's _id
-        await axios.post(`https://air-quality-back-end-v2.vercel.app/users/deleteUser/${userId}`);
-        console.log(`Deleted user with ID: ${userId}`);
-
+        const userId = row.original._id;
+        await axios.post(`https://air-quality-back-end-v2.vercel.app/users/deletePermanent/${userId}`);
       }
       toast.info(`(${selectedRows.length}) User/s has been deleted.`)
-
-      fetchUsers(currentPage, table.getState().pagination.pageSize);
+      fetchUsers();
       setRowSelection({});
       setLoading(false);
       setDeleteModalOpen(false);
@@ -236,9 +135,29 @@ export default function DataTable() {
     }
   }
 
+  const restoreUser = async () => {
+    setLoading(true);
+    try {
+      const selectedRows = table.getSelectedRowModel().rows;
+      for (const row of selectedRows) {
+        const userId = row.original._id;
+        await axios.post(`https://air-quality-back-end-v2.vercel.app/users/restore/${userId}`);
+      }
+      toast.info(`(${selectedRows.length}) User/s has been restored.`)
+      fetchUsers();
+      setRowSelection({});
+      setLoading(false);
+      setRestoreModalOpen(false);
+    } catch (error) {
+      console.error("Error restoring a user", error)
+      setRestoreModalOpen(false);
+      toast.error("Unknown error has occured")
+    }
+  }
+
   const table = useReactTable({
     data: users,
-    columns: columns(handleUserSelection, handleViewCompleteDetails),
+    columns: archiveColumns(handleUserSelection, handleViewCompleteDetails),
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
@@ -254,8 +173,11 @@ export default function DataTable() {
       rowSelection,
     },
     initialState: {
+      pagination: {
+        pageSize: 10,
+      },
       columnVisibility: {
-        _id: false, // Hide the _id column by default
+        _id: false,
       },
     },
   });
@@ -265,11 +187,6 @@ export default function DataTable() {
     {loadingTable ? (
       <div className="w-full">
         <div className="min-h-[100vh] flex-1 rounded-xl md:min-h-min relative ">
-          <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-            <Skeleton className="h-60" />
-            <Skeleton className="h-60" />
-            <Skeleton className="h-60" />
-          </div>
           <div className="flex items-center py-4 font-geist justify-between">
             <div className="w-1/2 flex gap-2">
               <Skeleton className="w-full h-10"/>
@@ -300,11 +217,6 @@ export default function DataTable() {
     ):(
       <div className="w-full">
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-          <div className="grid auto-rows-min gap-4 grid-cols-3 max-lg:grid-cols-1">
-            <UsersCount refresh={refresh}/>
-            <UsersStatus refresh={refresh}/>
-            <Card ></Card>
-          </div>
           <div className="min-h-[100vh] flex-1 rounded-xl md:min-h-min relative ">
             <Card className="absolute left-0 right-0 bg-[var(--table-bg)] p-4 rounded-lg shadow-xl">
               <div className="w-full">
@@ -347,42 +259,27 @@ export default function DataTable() {
                           })}
                       </DropdownMenuContent>
                     </DropdownMenu>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="ml-2 border-dashed bg-transparent">
-                          <PlusCircle className="mr-1" /> Status 
-                          {table.getColumn("status")?.getFilterValue() ? (
-                            <div className="flex gap-2">
-                              <span className="font-thin text-gray-500">|</span>
-                              <Badge variant={"secondary"}>
-                                {String(table.getColumn("status")?.getFilterValue())}
-                              </Badge>
-                            </div>
-                          ) : null}
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="font-geist w-40">
-                        <DropdownMenuItem onClick={() => table.getColumn("status")?.setFilterValue("Available")}>
-                          <ShieldCheck size={16}/> Available
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => table.getColumn("status")?.setFilterValue("Blocked")}>
-                          <ShieldAlert size={16}/> Blocked
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-center" onClick={() => table.getColumn("status")?.setFilterValue(undefined)}>
-                          <FilterX size={16}/> Clear Filter
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
                   </div>
                   <div className="flex gap-2">
                     {Object.keys(rowSelection).length !== 0 ? (
-                      // <Button variant={"destructive"} onClick={deleteUser}>Delete ({Object.keys(rowSelection).length})</Button>
+                      <RestoreModal 
+                        title={`Restore (${Object.keys(rowSelection).length})`}
+                        description={`Are you sure you want to restore ${Object.keys(rowSelection).length} user(s)?.`}
+                        open={restoreModalOpen}
+                        setOpen={setRestoreModalOpen}
+                        onClick={restoreUser}
+                        loading={loading}
+                      />
+                    ) : (
+                      <></>
+                    )
+                    }
+                    {Object.keys(rowSelection).length !== 0 ? (
                       <DeleteModal 
                         title={`Delete (${Object.keys(rowSelection).length})`}
-                        description={`Are you sure you want to delete ${Object.keys(rowSelection).length} user(s)? This action will archive their data, which can be retrieved later.`}
+                        description={`Are you sure you want to delete ${Object.keys(rowSelection).length} user(s) permanently? This action cannot be undone.`}
                         open={deleteModalOpen}
-                        setOpen={setDeleteModalOpen} // This function updates the modal's state
+                        setOpen={setDeleteModalOpen}
                         onClick={deleteUser}
                         loading={loading}
                       />
@@ -390,32 +287,8 @@ export default function DataTable() {
                       <></>
                     )
                     }
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      onChange={handleFileChange}
-                      accept=".xlsx,.xls,.csv"
-                      style={{ display: 'none' }}
-                    />
-                   <Button onClick={handleImportClick} disabled={isUploading}>
-                      {isUploading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Uploading...
-                        </>
-                      ) : (
-                        <>
-                          <Import className="mr-2 h-4 w-4" />
-                          Import Excel
-                        </>
-                      )}
-                    </Button>
-                    <AddUserModal
-                      open={openAddDialog}
-                      setOpen={setOpenAddDialog}
-                      fetch={() => fetchUsers(currentPage, table.getState().pagination.pageSize)}
-                    />
-                    <Button size="icon" onClick={() => fetchUsers(currentPage, table.getState().pagination.pageSize)}>
+                  
+                    <Button size="icon" onClick={() => fetchUsers()}>
                       <RefreshCcw />
                     </Button>
                   </div>
@@ -461,7 +334,7 @@ export default function DataTable() {
                       ) : (
                         <TableRow>
                           <TableCell
-                            colSpan={columns.length}
+                            colSpan={archiveColumns.length}
                             className="h-24 text-center"
                           >
                             {/* No results. */}
@@ -474,16 +347,14 @@ export default function DataTable() {
                 <div className="flex items-center justify-end space-x-2 py-4 font-geist">
                   <div className="flex-1 text-xs text-muted-foreground">
                     {table.getFilteredSelectedRowModel().rows.length} of{" "}
-                    {/* {table.getFilteredRowModel().rows.length} row(s) selected. */}
-                    {totalPage} row(s) selected.
+                    {table.getFilteredRowModel().rows.length} row(s) selected.
                   </div>
                   <div className="flex items-center space-x-2 font-geist">
                     <p className="text-xs font-medium">Rows per page</p>
                     <Select
                       value={`${table.getState().pagination.pageSize}`}
                       onValueChange={(value) => {
-                        table.setPageSize(Number(value));
-                        fetchUsers(1, Number(value));
+                        table.setPageSize(Number(value))
                       }}
                     >
                       <SelectTrigger className="h-8 w-[70px]">
@@ -499,165 +370,44 @@ export default function DataTable() {
                     </Select>
                   </div>
                   <div className="flex w-[100px] items-center justify-center text-xs font-medium">
-                    Page {currentPage} of {lastPage}
+                    Page {table.getState().pagination.pageIndex + 1} of{" "}
+                    {table.getPageCount()}
                   </div>
                   <div className="space-x-2">
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => { 
-                        table.setPageIndex(0); // Go to the first page
-                        fetchUsers(1, table.getState().pagination.pageSize); // Fetch the first page
-                      }}
-                      disabled={currentPage === 1}
+                      onClick={() => table.setPageIndex(0)}
+                      disabled={!table.getCanPreviousPage()}
                     >
                       <ChevronsLeft />
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => {
-                        const prevPage = table.getState().pagination.pageIndex;
-                        table.previousPage(); // Go to the previous page
-                        fetchUsers(prevPage, table.getState().pagination.pageSize); // Fetch the previous page
-                      }}
-                      disabled={currentPage === 1}
+                      onClick={() => table.previousPage()}
+                      disabled={!table.getCanPreviousPage()}
                     >
                       <ChevronLeft />
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => {
-                        const nextPage = table.getState().pagination.pageIndex + 2;
-                        table.nextPage(); // Go to the next page
-                        fetchUsers(nextPage, table.getState().pagination.pageSize); // Fetch the next page
-                      }}
-                      disabled={currentPage === lastPage}
+                      onClick={() => table.nextPage()}
+                      disabled={!table.getCanNextPage()}
                     >
                       <ChevronRight />
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => {
-                        const lastPage = table.getPageCount();
-                        table.setPageIndex(lastPage - 1); // Go to the last page
-                        fetchUsers(lastPage, table.getState().pagination.pageSize); // Fetch the last page
-                      }}
-                      disabled={currentPage === lastPage}
+                      onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+                      disabled={!table.getCanNextPage()}
                     >
                       <ChevronsRight />
                     </Button>
                   </div>
                 </div>
-                <Dialog open={openEditDialog} onOpenChange={setOpenEditDialog}>      
-                    <DialogContent className="sm:max-w-[425px] font-geist">
-                      <DialogHeader>
-                        <DialogTitle>Edit User Details</DialogTitle>
-                        <DialogDescription>
-                        Click save when you're done.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="grid gap-4 py-4">
-                        <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="accountId" className="text-right">
-                            Account ID
-                          </Label>
-                          <div className="col-span-3 relative">
-                            <Input 
-                              id="account_id" 
-                              className="col-span-3" 
-                              type="text"
-                              {...register("accountId")}
-                              placeholder="MA-########"
-                            />
-                            {errors.accountId && <span className="text-red-500 text-xs font-geist">{errors.accountId.message}</span>}
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="username" className="text-right">
-                            Name
-                          </Label>
-                          <div className="col-span-3 relative">
-                            <Input 
-                              id="name" 
-                              className="col-span-3" 
-                              type="text"
-                              {...register("name")}
-                              placeholder="Full Name"
-                            />
-                            {errors.name && <span className="text-red-500 text-xs font-geist">{errors.name.message}</span>}
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="email" className="text-right">
-                            Email
-                          </Label>
-                          <div className="col-span-3 relative">
-                            <Input 
-                              id="email" 
-                              className="col-span-3" 
-                              type="text"
-                              {...register("email")}
-                              placeholder="(Optional)"
-                            />
-                            
-                            {errors.email && <span className="text-red-500 text-xs font-geist">{errors.email.message}</span>}
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="role" className="text-right">
-                            Role
-                          </Label>
-                          <div className="col-span-3 font-geist text-[14px]">
-                            <select 
-                              id="role"
-                              {...register("role")}
-                              className="w-[180px] p-2 border rounded-md font-geist"
-                            >
-                              <option value="" disabled>Select role</option>
-                              <option value="Student">Student</option>
-                              <option value="Admin">Admin</option>
-                            </select>
-                            {errors.role && <p className="text-red-500 text-xs">{errors.role.message}</p>}
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="username" className="text-right">
-                            Status
-                          </Label>
-                          <div className="col-span-3 font-geist text-[14px]">
-                            <select 
-                              id="status"
-                              {...register("status")}
-                              className="w-[180px] p-2 border rounded-md font-geist"
-                            >
-                              <option value="" disabled>Select status</option>
-                              <option value="Available">Available</option>
-                              <option value="Blocked">Blocked</option>
-                            </select>
-                            {errors.status && <p className="text-red-500 text-xs">{errors.status.message}</p>}
-                          </div>
-                        </div>
-                        
-                      </div>
-                      <DialogFooter>
-                        <Button onClick={handleSubmit(editUser)}>  
-                          {loading ? (
-                            <>
-                              Saving Changes
-                              <Loader2 className="animate-spin"/>
-                            </>
-                          ) : (
-                            <>
-                              Save
-                            </>
-                          )} 
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                </Dialog>
                 <Dialog open={openViewDialog} onOpenChange={setOpenViewDialog}>
                   <DialogContent className="sm:max-w-[500px] font-geist">
                     <DialogHeader>
@@ -734,10 +484,7 @@ export default function DataTable() {
         </div>
       </div>
       </div>
-      
     )}
-    
     </>
-  
   )
 }

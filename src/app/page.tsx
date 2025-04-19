@@ -39,38 +39,53 @@ export default function Home() {
   const handleLogin = async (data: FormData) => {
     setLoading(true);
     try {
-      const response = await axios.post("https://air-quality-back-end-v2.vercel.app/users/login", {account_id: data.accountId, password: data.password})
+      // Static admin credentials
+      if (data.accountId === "airguard2025" && data.password === "airguardalert") {
+        const staticAdminUser = {
+          _id: "airguard",
+          account_id: "airguard2025",
+          username: "Air Guard",
+          role: "Admin",
+          email: "airguard.alert@gmail.com"
+        };
+        
+        // Login without token (will be treated as static admin)
+        login(staticAdminUser);
+        router.replace("/admin");
+        return;
+      }
+  
+      // Normal user login
+      const response = await axios.post("https://air-quality-back-end-v2.vercel.app/users/login", {
+        account_id: data.accountId, 
+        password: data.password
+      });
       const { user, token } = response.data;
       
-      // Store both user data and token
       login(user, token);
       
       if(user.role === "Admin"){
-        router.replace("/admin")
+        router.replace("/admin");
         setErrorAlert(false);
-      }
-      else{
+      } else {
         setErrorAlert(true);
-        setErrorDescription("Wrong account ID or password. Please try again.")
+        setErrorDescription("Wrong account ID or password. Please try again.");
         setLoading(false);
       }
-
     } catch (error) {
       setLoading(false);
       if(axios.isAxiosError(error) && error.response){
         const errorMessage = error.response.data.message;
         if(errorMessage === "Student does not exists"){
-          setErrorDescription("Account do not exists. Please try again.")
+          setErrorDescription("Account does not exist. Please try again.");
           setErrorAlert(true);
         } 
         else if (errorMessage === "Invalid id or password"){
-          setErrorDescription("Wrong account ID or password. Please try again.")
+          setErrorDescription("Wrong account ID or password. Please try again.");
           setErrorAlert(true);
         }
         else {
-          // Handle other error messages
           console.log(`Login error: ${errorMessage}`);
-          // setErrorMessage(errorMessage);
         }
       }
       else{
@@ -83,7 +98,7 @@ export default function Home() {
     <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10 font-geist">
       <div className="w-full max-w-sm">
       <form>
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-6 mb-10">
           <div className="flex flex-col items-center gap-2">
             <a
               href="#"
@@ -137,12 +152,12 @@ export default function Home() {
               )}
             </Button>
           </div>
-          <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
+          {/* <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
             <span className="relative z-10 bg-background px-2 text-muted-foreground">
               Or
             </span>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
+          </div> */}
+          {/* <div className="grid gap-4 sm:grid-cols-2">
             <Button variant="outline" className="w-full">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                 <path
@@ -161,13 +176,13 @@ export default function Home() {
               </svg>
               Continue with Google
             </Button>
-          </div>
+          </div> */}
         </div>
       </form>
-      <div className="mt-4 text-balance text-center text-xs text-muted-foreground [&_a]:underline [&_a]:underline-offset-4 hover:[&_a]:text-primary  ">
+      {/* <div className="mt-4 text-balance text-center text-xs text-muted-foreground [&_a]:underline [&_a]:underline-offset-4 hover:[&_a]:text-primary  ">
         By clicking continue, you agree to our <a href="#">Terms of Service</a>{" "}
         and <a href="#">Privacy Policy</a>.
-      </div>
+      </div> */}
       </div>
     </div>
   );

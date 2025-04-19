@@ -16,12 +16,6 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import DataTable from "./data-table"
-import { useEffect, useState } from "react"
-import axios from "axios"
-import { User } from "./columns"
-import { PollutantsTime } from "@/components/charts/PollutantsTime"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { UsersCount } from "@/components/charts/UsersCount"
 
 export default function Admin() {
   

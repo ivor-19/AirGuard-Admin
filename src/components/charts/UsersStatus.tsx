@@ -10,7 +10,7 @@ import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } f
 
 interface User {
   _id: string
-  status: "Ready" | "Blocked"
+  status: "Available" | "Blocked"
 }
 
 export function UsersStatus({ refresh }: { refresh: number }) {
@@ -25,7 +25,7 @@ export function UsersStatus({ refresh }: { refresh: number }) {
       const response = await axios.get("https://air-quality-back-end-v2.vercel.app/users")
       const users: User[] = response.data.users
 
-      const ready = users.filter((user) => user.status === "Ready").length
+      const ready = users.filter((user) => user.status === "Available").length
       const blocked = users.filter((user) => user.status === "Blocked").length
 
       setTotalUsers(users.length)
@@ -51,7 +51,7 @@ export function UsersStatus({ refresh }: { refresh: number }) {
       label: "Users",
     },
     ready: {
-      label: "Ready",
+      label: "Available",
     },
     blocked: {
       label: "Blocked",
@@ -125,7 +125,7 @@ export function UsersStatus({ refresh }: { refresh: number }) {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
             <div className="border rounded-lg">
-              {renderStatusChart(readyCount, "Ready", readyChartData, "#22c55e")}
+              {renderStatusChart(readyCount, "Available", readyChartData, "#22c55e")}
             </div>
             <div className="border rounded-lg">
               {renderStatusChart(blockedCount, "Blocked", blockedChartData, "#ef4444")}
@@ -139,7 +139,7 @@ export function UsersStatus({ refresh }: { refresh: number }) {
             <TrendingUp className="h-4 w-4" />
             Status Distribution
           </div>
-          <div className="text-xs text-muted-foreground mt-1">Showing the total number of active and blocked users</div>
+          <div className="text-xs text-muted-foreground mt-1">Showing the total number of available and blocked users</div>
         </div>
       </CardFooter>
     </Card>

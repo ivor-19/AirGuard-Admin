@@ -1,189 +1,208 @@
 "use client"
 
-import type React from "react"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { AlertCircle, Check, User, Lock, IdCard, User2, Mail } from "lucide-react"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { cn } from "@/lib/utils"
+import { User, Lock, IdCard, User2, Mail, Loader } from "lucide-react"
 import { useAuth } from "@/app/context/AuthContext"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
+import * as z from "zod"
+import axios from "axios"
+import { toast } from "sonner"
+import ImageGallery from "./ImageGallery"
+import ImageUpload from "./ImageUpload"
 
-// Media query hook
-const useMediaQuery = (query: string): boolean => {
-  const [matches, setMatches] = useState(false)
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia(query)
-
-    const handleChange = () => {
-      setMatches(mediaQuery.matches)
-    }
-
-    // Set initial value
-    setMatches(mediaQuery.matches)
-
-    mediaQuery.addEventListener("change", handleChange)
-    return () => {
-      mediaQuery.removeEventListener("change", handleChange)
-    }
-  }, [query])
-
-  return matches
-}
+// Password validation schema
+const passwordSchema = z.object({
+  currentPassword: z.string().min(1, "Current password is required"),
+  newPassword: z.string().min(8, "Password must be at least 8 characters"),
+  confirmPassword: z.string().min(1, "Please confirm your password"),
+}).refine(data => data.newPassword === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+})
 
 export default function AccountPage() {
+  const { userCred } = useAuth()
   const [activeTab, setActiveTab] = useState<"profile" | "password">("profile")
-  const [passwordChanged, setPasswordChanged] = useState(false)
-  const [error, setError] = useState("")
-  const isMobile = useMediaQuery("(max-width: 768px)")
-  const { userCred } = useAuth();
+  const [loading, setLoading] = useState(false)
+  const [incorrectCurrent, setIncorrectCurrent] = useState(false);
+  
+  // Password form
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm({
+    resolver: zodResolver(passwordSchema),
+  })
 
-  const handleChangePassword = (e: React.FormEvent) => {
-    e.preventDefault()
-    const formData = new FormData(e.target as HTMLFormElement)
-    const currentPassword = formData.get("currentPassword") as string
-    const newPassword = formData.get("newPassword") as string
-    const confirmPassword = formData.get("confirmPassword") as string
-
-    // Reset states
-    setError("")
-
-    // Simple validation
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      setError("All fields are required")
-      return
+  const onSubmit = async (data: any) => {
+    try {
+      setLoading(true);
+      const p = { 
+        currentPassword: data.currentPassword, 
+        newPassword: data.newPassword, 
+        confirmPassword: data.confirmPassword 
+      }
+      const response = await axios.post(
+        `https://air-quality-back-end-v2.vercel.app/users/changePassword/${userCred?._id}`, 
+        p
+      );
+      
+      if (response.data.isSuccess) {
+        toast.success("New password has been saved!");
+        setIncorrectCurrent(false)
+      } else {
+        toast.error(response.data.message || "Failed to update password");
+      }
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        console.error(error.response.data.message || "Error changing password");
+        if(error.response.data.message === 'Current password is incorrect'){
+          setIncorrectCurrent(true)
+        }
+      } else {
+        toast.error("An unexpected error occurred");
+      }
+      console.error("Error has occurred", error);
+    } finally {
+      setLoading(false);
+      reset();
     }
-
-    if (newPassword !== confirmPassword) {
-      setError("New passwords don't match")
-      return
-    }
-
-    if (newPassword.length < 8) {
-      setError("Password must be at least 8 characters")
-      return
-    }
-
-    // Here you would call your API to change the password
-    // For demo purposes, we'll just simulate success
-    setTimeout(() => {
-      setError("")
-      setPasswordChanged(true)
-
-      // Reset the success message after 3 seconds
-      setTimeout(() => {
-        setPasswordChanged(false)
-      }, 3000)
-    }, 1000)
   }
-
-  const NavButton = ({
-    id,
-    label,
-    icon,
-  }: {
-    id: "profile" | "password"
-    label: string
-    icon: React.ReactNode
-  }) => (
-    <Button
-      variant={activeTab === id ? "default" : "ghost"}
-      className={cn("justify-start w-full", isMobile ? "flex-1" : "mb-1")}
-      onClick={() => setActiveTab(id)}
-    >
-      {icon}
-      <span className="ml-2">{label}</span>
-    </Button>
-  )
 
   return (
     <div className="container max-w-5xl py-10 font-geist">
       <div className="flex flex-col md:flex-row gap-6">
-        {/* Navigation */}
-        <div className={cn("md:w-64 shrink-0", isMobile ? "mb-4" : "")}>
-          <div className={cn("flex md:flex-col", isMobile ? "space-x-2" : "space-y-1")}>
-            <NavButton id="profile" label="My Profile" icon={<User className="h-4 w-4" />} />
-            <NavButton id="password" label="Change Password" icon={<Lock className="h-4 w-4" />} />
-          </div>
+        {/* Sidebar Navigation */}
+        <div className="md:w-64 shrink-0 space-y-2">
+          <Button 
+            variant={activeTab === "profile" ? "default" : "ghost"} 
+            className="w-full justify-start"
+            onClick={() => setActiveTab("profile")}
+          >
+            <User className="h-4 w-4 mr-2" />
+            My Profile
+          </Button>
+          <Button 
+            variant={activeTab === "password" ? "default" : "ghost"} 
+            className="w-full justify-start"
+            onClick={() => setActiveTab("password")}
+          >
+            <Lock className="h-4 w-4 mr-2" />
+            Change Password
+          </Button>
         </div>
 
-        {/* Content */}
+        {/* Main Content */}
         <div className="flex-1">
-          <Card className="w-full">
+          <Card>
             <CardHeader>
-              <CardTitle className="text-2xl">{activeTab === "profile" ? "My Profile" : "Change Password"}</CardTitle>
+              <CardTitle>
+                {activeTab === "profile" ? "Profile Information" : "Change Password"}
+              </CardTitle>
               <CardDescription>
-                {activeTab === "profile" ? "View your account information" : "Update your password"}
+                {activeTab === "profile" 
+                  ? "View your account details" 
+                  : "Update your password"}
               </CardDescription>
             </CardHeader>
             <CardContent>
               {activeTab === "profile" ? (
-                <div className="space-y-6">
-                  <div className="space-y-1">
-                    <Label className="text-sm text-muted-foreground">Account ID</Label>
-                    <div className="flex gap-2 items-center">
-                      <IdCard className="h-4 w-4 text-muted-foreground" />
-                      <div className="text-lg font-medium">{userCred?.account_id}</div>
+                <div className="space-y-4">
+                  <div>
+                    <Label>Account ID</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <IdCard className="h-4 w-4" />
+                      <span>{userCred?.account_id}</span>
                     </div>
                   </div>
-
-                  <div className="space-y-1">
-                    <Label className="text-sm text-muted-foreground">Name</Label>
-                    <div className="flex gap-2 items-center">
-                      <User2 className="h-4 w-4 text-muted-foreground" />
-                      <div className="text-lg font-medium">{userCred?.username}</div>
+                  <div>
+                    <Label>Name</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <User2 className="h-4 w-4" />
+                      <span>{userCred?.username}</span>
                     </div>
                   </div>
-
-                  <div className="space-y-1">
-                    <Label className="text-sm text-muted-foreground">Email</Label>
-                    <div className="flex gap-2 items-center">
-                      <Mail className="h-4 w-4 text-muted-foreground" />
-                      <div className="text-lg font-medium">{userCred?.email}</div>
+                  <div>
+                    <Label>Email</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Mail className="h-4 w-4" />
+                      <span>{userCred?.email}</span>
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {passwordChanged && (
-                    <Alert className="bg-green-50 text-green-800 border-green-200">
-                      <Check className="h-4 w-4" />
-                      <AlertDescription>Password successfully changed</AlertDescription>
-                    </Alert>
-                  )}
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                  <div>
+                    <Label htmlFor="currentPassword">Current Password</Label>
+                    <Input 
+                      id="currentPassword" 
+                      type="password" 
+                      {...register("currentPassword")} 
+                    />
+                    {errors.currentPassword && (
+                      <p className="text-sm text-red-500 mt-1">
+                        {errors.currentPassword.message as string}
+                      </p>
+                    )}
+                    {incorrectCurrent && (
+                      <p className="text-sm text-red-500 mt-1">
+                        Current password is incorrect
+                      </p>
+                    )}
+                  </div>
 
-                  <form onSubmit={handleChangePassword} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="currentPassword">Current Password</Label>
-                      <Input id="currentPassword" name="currentPassword" type="password" />
-                    </div>
+                  <div>
+                    <Label htmlFor="newPassword">New Password</Label>
+                    <Input 
+                      id="newPassword" 
+                      type="password" 
+                      {...register("newPassword")} 
+                    />
+                    {errors.newPassword && (
+                      <p className="text-sm text-red-500 mt-1">
+                        {errors.newPassword.message as string}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="confirmPassword">Confirm Password</Label>
+                    <Input 
+                      id="confirmPassword" 
+                      type="password" 
+                      {...register("confirmPassword")} 
+                    />
+                    {errors.confirmPassword && (
+                      <p className="text-sm text-red-500 mt-1">
+                        {errors.confirmPassword.message as string}
+                      </p>
+                    )}
+                  </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="newPassword">New Password</Label>
-                      <Input id="newPassword" name="newPassword" type="password" />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                      <Input id="confirmPassword" name="confirmPassword" type="password" />
-                    </div>
-
-                    {error && (
-                      <Alert variant="destructive">
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertDescription>{error}</AlertDescription>
-                      </Alert>
+                  <Button type="submit" className="mt-4">
+                    {loading ? (
+                      <>
+                        Updating<Loader className="animate-spin"/>
+                      </>
+                    ):(
+                      <>
+                        Update Password
+                      </>
                     )}
 
-                    <Button type="submit">Save Password</Button>
-                  </form>
-                </div>
+                  </Button>
+                </form>
               )}
             </CardContent>
           </Card>
+          <ImageGallery />
+          <ImageUpload />
         </div>
       </div>
     </div>

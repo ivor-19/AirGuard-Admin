@@ -45,7 +45,9 @@ export function TeamSwitcher({
               </div>
               
             </SidebarMenuButton>
-            <ModeToggle />
+            <div className="absolute right-0">
+              <ModeToggle />
+            </div>
             </div>
           </DropdownMenuTrigger>
        

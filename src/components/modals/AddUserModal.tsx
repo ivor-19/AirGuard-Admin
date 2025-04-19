@@ -33,7 +33,7 @@ interface AddUserModalProps {
 }
 
 const FormSchema = z.object({
-  accountId: z.string().min(10, {message: "Account ID must have atleast 10 characters"}),
+  accountId: z.string().min(4, {message: "Account ID must have atleast 4 characters"}),
   name: z.string().min(1, {message: "Name is required"}),
   email: z.string().email().optional(),
   role: z.enum(["Student", "Admin"]).default("Student")
@@ -49,6 +49,7 @@ export const AddUserModal = ({open, setOpen, fetch} : AddUserModalProps) => {
     }
   })
   const [userExists, setUserExists] = useState(false);
+  const [emailExists, setEmailExists] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const role = watch("role");
@@ -56,6 +57,7 @@ export const AddUserModal = ({open, setOpen, fetch} : AddUserModalProps) => {
   const addUser = async (data: FormData) => {
     setLoading(true);
     setUserExists(false);
+    setEmailExists(false);
     const password = data.role === "Student" ? "@Student01" : "@Admin01";
 
     const newUser = {
@@ -70,20 +72,6 @@ export const AddUserModal = ({open, setOpen, fetch} : AddUserModalProps) => {
       console.log("Success", response.data);
       setOpen(false);
       toast.success("User has been created.");
-
-      if(newUser.email != ""){
-        const cred = {
-          to: data.email,
-          subject: "Your password for AirGuard App",
-          message: "Password: @Student01"
-        }
-
-        try {
-          await axios.post('https://air-quality-back-end-v2.vercel.app/email/send', cred);
-        } catch (error) {
-          console.error(error);
-        }
-      }
       
       reset({
         accountId: "",
@@ -104,6 +92,11 @@ export const AddUserModal = ({open, setOpen, fetch} : AddUserModalProps) => {
           if (errorMessage === 'User already exists.') {
             console.log(errorResponse.data.message)
             setUserExists(true);
+            setLoading(false);
+          }
+          else if (errorMessage === 'Email already exists.') {
+            console.log(errorResponse.data.message)
+            setEmailExists(true);
             setLoading(false);
           }
         }
@@ -143,6 +136,7 @@ export const AddUserModal = ({open, setOpen, fetch} : AddUserModalProps) => {
                 placeholder="MA########"
               />
               {errors.accountId && <span className="text-red-500 text-xs font-geist">{errors.accountId.message}</span>}
+              {userExists && <span className="text-red-500 text-xs font-geist">User already exists. Please choose a different account ID.</span>}
             </div>
           </div>
           <div className="">
@@ -170,9 +164,10 @@ export const AddUserModal = ({open, setOpen, fetch} : AddUserModalProps) => {
                 className="col-span-3" 
                 type="text"
                 {...register("email")}
-                placeholder="(Optional)"
+                placeholder="Email"
               />
               {errors.email && <span className="text-red-500 text-xs font-geist">{errors.email.message}</span>}
+              {emailExists && <span className="text-red-500 text-xs font-geist">Email already exists. Please choose a different email.</span>}
             </div>
           </div>
           <div>
@@ -194,7 +189,6 @@ export const AddUserModal = ({open, setOpen, fetch} : AddUserModalProps) => {
           </div>
         </div>
         <DialogFooter className="flex items-center">
-          {userExists && <span className="text-red-500 text-xs font-geist">User already exists. Please choose a different account ID.</span>}
           <span className="text-gray-500 text-xs font-geist"> Password will be automatically set to @Student01 for Students or @Admin01 for Admins.</span>
           <Button onClick={handleSubmit(addUser)}> 
             {loading ? ( 

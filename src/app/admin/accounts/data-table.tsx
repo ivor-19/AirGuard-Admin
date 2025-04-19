@@ -39,14 +39,13 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { useEffect, useState } from "react"
 
 import { columns } from "./columns"
 import { User } from "./columns"
-import { CalendarDays, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, CircleCheck, CircleX, FilterX, IdCard, Import, ListFilter, Loader, Loader2, Mail, PlusCircle, RefreshCcw, RefreshCw, Settings2, Shield, ShieldAlert, ShieldCheck, User2 } from "lucide-react"
+import { AlertCircle, BadgeCheck, BadgePlusIcon, CalendarDays, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, CircleCheck, CircleX, FilterX, IdCard, Import, KeyRound, ListFilter, Loader, Loader2, Mail, PlusCircle, RefreshCcw, RefreshCw, Settings2, Shield, ShieldAlert, ShieldCheck, User2 } from "lucide-react"
 import axios from "axios"
 import { toast } from "sonner"
 import DeleteModal from "@/components/modals/DeleteModal"
@@ -61,14 +60,16 @@ import { Card } from "@/components/ui/card"
 import { UsersStatus } from "@/components/charts/UsersStatus"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
+import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { useRouter } from "next/navigation"
 
 const FormSchema = z.object({
   accountId: z.string().min(10, {message: "Account ID must have atleast 10 characters"}),
   name: z.string().min(1, {message: "Name is required"}),
   email: z.string(),
   role: z.enum(["Admin", "Student"], {message: "Invalid role"}),
-  status: z.enum(["Ready", "Blocked"], {message: "Invalid status"})
+  status: z.enum(["Available", "Blocked"], {message: "Invalid status"})
 })
 
 type FormData = z.infer<typeof FormSchema>;
@@ -77,12 +78,15 @@ export default function DataTable() {
   const { register, handleSubmit, formState: {errors}, setValue } = useForm<FormData>({
     resolver: zodResolver(FormSchema),
   })
+  const router = useRouter();
   const [refresh, setRefresh] = useState(0);
 
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [openAddDialog, setOpenAddDialog] = useState(false);
   const [openViewDialog, setOpenViewDialog] = useState(false);
+  const [openResetPassword, setOpenResetPassword] = useState(false);
   const [openUploadExcel, setOpenUploadExcel] = useState(false);
+  const [successUpload, setSuccessUpload] = useState(false)
   const [loadingTable, setLoadingTable] = useState(true);
 
   const [sorting, setSorting] = React.useState<SortingState>([])
@@ -129,7 +133,11 @@ export default function DataTable() {
         }
       );
   
-      toast.success(response.data.message || 'Excel file imported successfully!');
+      // toast.success(response.data.message || 'Excel file imported successfully!');
+      setSuccessUpload(true)
+      setTimeout(() => {
+        setSuccessUpload(false)
+      }, 3000)
       fetchUsers();
     } catch (error) {
       console.error('Error uploading file:', error);
@@ -174,13 +182,18 @@ export default function DataTable() {
     setSelectedUser(user);
   };
 
+  const handleResetPassword = (user: User) => {
+    setOpenResetPassword(true);
+    setSelectedUser(user);
+  };
+
   useEffect(() => {
     if (selectedUser) {
       setValue("accountId", selectedUser.account_id);
       setValue("name", selectedUser.username);
       setValue("email", selectedUser.email);
       setValue("role", selectedUser.role as "Admin" | "Student");
-      setValue("status", selectedUser.status as "Ready" | "Blocked");
+      setValue("status", selectedUser.status as "Available" | "Blocked");
     }
   }, [selectedUser, setValue]); 
 
@@ -218,9 +231,57 @@ export default function DataTable() {
     }
   }
 
+  const resetPassword = async () => {
+    setLoading(true);
+    let newPassword;
+
+    if(selectedUser?.role === 'Student'){
+      newPassword = {password: '@Student01'}
+    }
+    else{
+      newPassword = {password: '@Admin01'}
+    }
+    console.log(newPassword)
+    try {
+      await axios.post(`https://air-quality-back-end-v2.vercel.app/users/editUser/${selectedUser?._id}`, newPassword)
+      setOpenEditDialog(false);
+      setLoading(false);
+      toast.success("Reset password successfully!")
+      setOpenResetPassword(false)
+      const message = {
+        to: selectedUser?.email,
+        subject: "Your AirGuard App Password Has Been Reset",
+        html: `
+          <p>Dear User,</p>
+          <p>Your password for the AirGuard App has been successfully reset. Please find your new login credentials below:</p>        
+          <p>Account ID: ${selectedUser?.account_id}</p>
+          <p>Temporary Password: ${newPassword.password}</p>       
+          <p>
+            For your security, we strongly recommend logging in and changing your password as soon as possible.
+            If you did not request this change, please contact our support team immediately.
+          </p>
+          <p>Best regards,</p>
+          <p>The AirGuard Team</p>
+        `
+      }
+      try {
+        await axios.post('https://air-quality-back-end-v2.vercel.app/email/send', message);
+        setOpenResetPassword(false)
+      } catch (error) {
+        console.error(error);
+      }
+      fetchUsers();
+    } catch (error) {
+      console.error("Error editing user", error)
+    } finally {
+      setLoading(false);
+      setOpenResetPassword(false)
+    }
+  }
+
   const table = useReactTable({
     data: users,
-    columns: columns(handleUserSelection, handleViewCompleteDetails),
+    columns: columns(handleUserSelection, handleViewCompleteDetails, handleResetPassword),
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
@@ -250,8 +311,7 @@ export default function DataTable() {
     {loadingTable ? (
       <div className="w-full">
         <div className="min-h-[100vh] flex-1 rounded-xl md:min-h-min relative ">
-          <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-            <Skeleton className="h-60" />
+          <div className="grid auto-rows-min gap-4 md:grid-cols-2">
             <Skeleton className="h-60" />
             <Skeleton className="h-60" />
           </div>
@@ -285,7 +345,7 @@ export default function DataTable() {
     ):(
       <div className="w-full">
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-          <div className="grid auto-rows-min gap-4 grid-cols-3 max-lg:grid-cols-1">
+          <div className="grid auto-rows-min gap-4 grid-cols-2 max-lg:grid-cols-1">
             <UsersCount refresh={refresh}/>
             <UsersStatus refresh={refresh}/>
             <Card ></Card>
@@ -347,8 +407,8 @@ export default function DataTable() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="font-geist w-40">
-                        <DropdownMenuItem onClick={() => table.getColumn("status")?.setFilterValue("Ready")}>
-                          <ShieldCheck size={16}/> Ready
+                        <DropdownMenuItem onClick={() => table.getColumn("status")?.setFilterValue("Available")}>
+                          <ShieldCheck size={16}/> Available
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => table.getColumn("status")?.setFilterValue("Blocked")}>
                           <ShieldAlert size={16}/> Blocked
@@ -518,6 +578,7 @@ export default function DataTable() {
                       <ChevronsRight />
                     </Button>
                   </div>
+                  <Button variant={'secondary'} onClick={() => router.push('/admin/accounts/archive')}>View Archive</Button>
                 </div>
                 <Dialog open={openEditDialog} onOpenChange={setOpenEditDialog}>      
                   <DialogContent className="sm:max-w-[425px] font-geist">
@@ -539,6 +600,7 @@ export default function DataTable() {
                             type="text"
                             {...register("accountId")}
                             placeholder="MA-########"
+                            disabled
                           />
                           {errors.accountId && <span className="text-red-500 text-xs font-geist">{errors.accountId.message}</span>}
                         </div>
@@ -602,7 +664,7 @@ export default function DataTable() {
                             className="w-[180px] p-2 border rounded-md font-geist"
                           >
                             <option value="" disabled>Select status</option>
-                            <option value="Ready">Ready</option>
+                            <option value="Available">Available</option>
                             <option value="Blocked">Blocked</option>
                           </select>
                           {errors.status && <p className="text-red-500 text-xs">{errors.status.message}</p>}
@@ -665,10 +727,10 @@ export default function DataTable() {
 
                         <div className="text-sm text-muted-foreground">Status:</div>
                         <div>
-                          {selectedUser?.status === "Ready" ? (
+                          {selectedUser?.status === "Available" ? (
                             <Badge className="bg-green-200 text-green-800 hover:bg-green-200 flex items-center gap-1 w-fit">
                               <CircleCheck className="h-3.5 w-3.5" />
-                              Ready
+                              Available
                             </Badge>
                           ) : (
                             <Badge className="bg-red-200 text-red-900 hover:bg-red-200 flex items-center gap-1 w-fit">
@@ -697,6 +759,52 @@ export default function DataTable() {
                     </div>
                   </DialogContent>
                 </Dialog>
+                <Dialog open={openResetPassword} onOpenChange={setOpenResetPassword}>
+                  <DialogContent className="sm:max-w-[500px] font-geist">
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2 text-xl font-semibold">
+                        <KeyRound className="h-5 w-5" />
+                        Reset User Password
+                      </DialogTitle>
+                      <DialogDescription className="text-muted-foreground pt-2">
+                        This will reset the user's password to the system default.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 font-geist text-sm">
+                      <div className="border-amber-200 bg-amber-50 text-amber-800 p-4 rounded-md flex gap-2">
+                        <AlertCircle className="h-8 w-8" />
+                        <AlertDescription>
+                          The user will receive a notification with the default password. @Student01 for Students and @Admin01 for Admins
+                        </AlertDescription>
+                      </div>
+
+                      <div className="rounded-md bg-[var(--gray-counter)] p-4 ">
+                        <p>Are you sure you want to reset this user's password?</p>
+                        <p className="mt-2 text-slate-500">This action cannot be undone.</p>
+                      </div>
+                    </div>
+                    <DialogFooter className="flex sm:justify-end gap-2 mt-2">
+                      <Button variant="outline" onClick={() => setOpenResetPassword(false)}>
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={resetPassword}
+                        disabled={loading ? true : false}
+                      >
+                        {loading ? (
+                          <>
+                            Resetting
+                            <Loader2 className="animate-spin"/>
+                          </>
+                        ) : (
+                          <>
+                            Reset Password
+                          </>
+                        )} 
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
                 <AlertDialog open={openUploadExcel} onOpenChange={setOpenUploadExcel}>
                   <AlertDialogContent className='font-geist flex items-center justify-center'>
                     <AlertDialogHeader className='flex flex-col items-center justify-center'>
@@ -705,6 +813,19 @@ export default function DataTable() {
                     </AlertDialogHeader>
                   </AlertDialogContent>
                 </AlertDialog>
+                <Dialog open={successUpload} onOpenChange={setSuccessUpload}>
+                  <DialogContent className='font-geist flex items-center justify-center'>
+                    <DialogHeader className='flex flex-col items-center justify-center'>
+                      <BadgeCheck className="text-green-500 h-20 w-20" />
+                      <DialogTitle className='text-md font-semibold text-center mt-4'>
+                        Excel File Uploaded Successfully!
+                      </DialogTitle>
+                      <DialogDescription className='text-sm  text-center mt-2'>
+                        Your data has been imported and is now available in the system.
+                      </DialogDescription>
+                    </DialogHeader>
+                  </DialogContent>
+                </Dialog>
               </div>
           </Card>
         </div>

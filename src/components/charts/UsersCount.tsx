@@ -46,13 +46,13 @@ export function UsersCount({ refresh }: { refresh: number }) {
     {
       role: "student",
       users: studentCount,
-      fill: "#10b981",
+      fill: "#9333ea",
       percentage: totalUsers ? Math.round((studentCount / totalUsers) * 100) : 0,
     },
     {
       role: "admin",
       users: adminCount,
-      fill: "#f59e0b",
+      fill: "#fde68a",
       percentage: totalUsers ? Math.round((adminCount / totalUsers) * 100) : 0,
     },
   ]

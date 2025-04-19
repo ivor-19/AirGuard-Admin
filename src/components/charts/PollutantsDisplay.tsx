@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import axios from "axios"
-import { ArrowDown, ArrowUp, Minus, RefreshCcw } from "lucide-react"
+import { ArrowDown, ArrowUp, Gauge, Minus, RefreshCcw } from "lucide-react"
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
@@ -29,7 +29,6 @@ interface Reading {
 interface PollutantCardProps {
   title: string
   value?: number
-  unit: string
   trend: React.ReactNode
   description: string
 }
@@ -114,10 +113,10 @@ export function PollutantsDisplay() {
       ):(
         <Card className="flex flex-col font-geist overflow-hidden">
           <CardHeader>
-            <div>
-              <CardTitle>Air Quality Index</CardTitle>
-              <CardDescription>Real-time AQI Monitoring</CardDescription>
-            </div>
+            <CardTitle className="flex items-center gap-2">
+              <Gauge className="h-5 w-5" />Air Quality Index
+            </CardTitle>
+            <CardDescription>Real-time AQI Monitoring</CardDescription>
           </CardHeader>
           <CardContent className="p-0">
             <div className="flex flex-col md:flex-row">
@@ -152,28 +151,24 @@ export function PollutantsDisplay() {
                   <PollutantCard
                     title="PM2.5"
                     value={readings?.pm2_5}
-                    unit="μg/m³"
                     trend={getTrend(readings, previousReadings, "pm2_5")}
                     description="Fine particulate matter"
                   />
                   <PollutantCard
                     title="PM10"
                     value={readings?.pm10}
-                    unit="μg/m³"
                     trend={getTrend(readings, previousReadings, "pm10")}
                     description="Coarse particulate matter"
                   />
                   <PollutantCard
                     title="CO"
                     value={readings?.co}
-                    unit="ppm"
                     trend={getTrend(readings, previousReadings, "co")}
                     description="Carbon monoxide"
                   />
                   <PollutantCard
                     title="NO2"
                     value={readings?.no2}
-                    unit="ppb"
                     trend={getTrend(readings, previousReadings, "no2")}
                     description="Nitrogen dioxide"
                   />
@@ -208,7 +203,7 @@ export function PollutantsDisplay() {
   )
 }
 
-function PollutantCard({ title, value, unit, trend, description }: PollutantCardProps) {
+function PollutantCard({ title, value, trend, description }: PollutantCardProps) {
   return (
     <div className="p-4 rounded-lg shadow-sm border">
       <div className="flex justify-between items-start mb-1">
@@ -217,7 +212,6 @@ function PollutantCard({ title, value, unit, trend, description }: PollutantCard
       </div>
       <div className="flex items-baseline gap-1">
         <span className="text-2xl font-bold">{value !== undefined ? value : "-"}</span>
-        <span className="text-xs text-muted-foreground">{unit}</span>
       </div>
       <div className="text-xs text-muted-foreground mt-1">{description}</div>
     </div>

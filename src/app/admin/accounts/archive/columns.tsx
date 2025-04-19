@@ -3,7 +3,7 @@
 import { ColumnDef } from "@tanstack/react-table"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
-import { ArrowUpDown, CircleCheck, CircleX, Copy, MoreHorizontal, RotateCcw, SquarePen, User, UserCog, View } from "lucide-react"
+import { ArrowUpDown, CircleCheck, CircleX, Copy, MoreHorizontal, RotateCcw, SquarePen, View } from "lucide-react"
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -28,8 +28,7 @@ export type User = {
 }
 
 
-export const columns = (handleUserSelection: (user: User) => void, handleViewCompleteDetails: (user: User) => void, handleResetPassword: (user: User) => void): ColumnDef<User>[] => [
-
+export const archiveColumns = (handleUserSelection: (user: User) => void, handleViewCompleteDetails: (user: User) => void): ColumnDef<User>[] => [
   
   {
     id: "select",
@@ -133,52 +132,8 @@ export const columns = (handleUserSelection: (user: User) => void, handleViewCom
       )
     },
     cell: ({ row }) => (
-      <div className={`capitalize}`}>
-         {row.getValue("role") === "Student" ? (
-          <Badge className="px-2 py-1 text-xs font-medium bg-purple-200 text-purple-700 hover:bg-purple-50 gap-1">
-            <User className="h-3.5 w-3.5" />
-            {row.getValue("role")}
-          </Badge>
-        ):(
-          <Badge className="px-2 py-1 text-xs font-medium bg-amber-50 text-amber-700 hover:bg-amber-50 gap-1">
-            <UserCog className="h-3.5 w-3.5" />
-            {row.getValue("role")}
-          </Badge>
-        )}
-      </div>
-    ),
-  },
-  {
-    accessorKey: "status",
-    header: ({ column }) => {
-      return (
-        <div className="text-left">
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="pl-0"
-          >
-            Status
-            <ArrowUpDown className="ml-2 h-4 w-2" />
-            
-           
-          </Button>
-        </div>
-      )
-    },
-    cell: ({ row }) => (
-      <div className="capitalize">
-        {row.getValue("status") === "Available" ? (
-          <Badge className="bg-green-200 text-green-800 hover:bg-green-200 cursor-default gap-1">
-            <CircleCheck className="h-3.5 w-3.5" />
-            {row.getValue("status")}
-          </Badge>
-        ):(
-          <Badge className="bg-red-200 text-red-800 hover:bg-red-200 cursor-default gap-1">
-            <CircleX className="h-3.5 w-3.5" />
-            {row.getValue("status")}
-          </Badge>
-        )}
+      <div className={`capitalize ${row.getValue('role') === 'Admin' ? 'text-yellow-500 font-bold' : ''}`}>
+        {row.getValue("role")}
       </div>
     ),
   },
@@ -205,38 +160,7 @@ export const columns = (handleUserSelection: (user: User) => void, handleViewCom
     id: "actions",
     cell: ({ row }) => {
       const user = row.original
-      
-      // const notifyEmail = async () =>{
-      //   try {
-      //     // const message = {
-      //     //   to: user.email,
-      //     //   subject: "Your AirGuard App Password Has Been Reset",
-      //     //   message: `Hello,
-          
-      //     // Your password for the AirGuard App has been successfully reset. Please find your new login credentials below:
-          
-      //     // Account ID: ${user?.account_id}
-      //     // Temporary Password: ${user?.created_at}
-          
-      //     // For your security, we strongly recommend logging in and changing your password as soon as possible.
-          
-      //     // If you did not request this change, please contact our support team immediately.
-          
-      //     // Best regards,  
-      //     // The AirGuard Team`
-      //     // }
-      //     const message = {email: user.email, createdat: user.created_at}
-      //     // try {
-      //     //   await axios.post('https://air-quality-back-end-v2.vercel.app/email/send', message);
-      //     //   setOpenResetPassword(false)
-      //     // } catch (error) {
-      //     //   console.error(error);
-      //     // }
-      //     console.log(message)
-      //   } catch (error) {
-      //     console.error("Error notifying user", error)
-      //   }
-      // }
+     
 
       return (
         <>
@@ -254,23 +178,12 @@ export const columns = (handleUserSelection: (user: User) => void, handleViewCom
                 <Copy />
                 Copy Account ID
               </DropdownMenuItem>
-              {/* <DropdownMenuItem onClick={notifyEmail}>
-                <View />
-               NOtify
-              </DropdownMenuItem> */}
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => handleViewCompleteDetails(user)}>
                 <View />
                 View Complete Details
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleUserSelection(user)}>
-                <SquarePen />
-                Edit User Details
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleResetPassword(user)}>
-                <RotateCcw />
-                Reset Password
-              </DropdownMenuItem>
+
             </DropdownMenuContent>
           </DropdownMenu>
 

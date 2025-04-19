@@ -5,10 +5,11 @@ import axios from "axios"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
-import { CheckCircle, Clock, Loader, MessageSquare } from "lucide-react"
+import { CheckCircle, Clock, Loader, Edit, X, BadgeAlertIcon } from "lucide-react"
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogTitle, DialogTrigger } from "./ui/dialog"
+import DeleteModal from "./modals/DeleteModal"
 
 type Status = "Pending" | "Resolved" | "Closed"
 
@@ -32,6 +33,7 @@ interface Issue {
   status: Status
   created_at: string
   updated_at: string
+  comment?: string
   replies?: Reply[]
 }
 
@@ -43,32 +45,48 @@ interface ApiResponse {
 
 export default function IssueTracker() {
   const [issues, setIssues] = useState<Issue[]>([])
-  const [activeTab, setActiveTab] = useState<string>("all")
-  const [replyText, setReplyText] = useState<Record<string, string>>({})
+  const [activeTab, setActiveTab] = useState<string>("pending")
+  const [commentText, setCommentText] = useState<Record<string, string>>({})
+  const [originalCommentText, setOriginalCommentText] = useState<Record<string, string>>({})
+  const [editingComments, setEditingComments] = useState<Record<string, boolean>>({})
   const [loading, setLoading] = useState(true)
+  const [showDelete, setShowDelete] = useState(false);
   const [error, setError] = useState<string | null>(null)
 
+  const fetchIssues = async () => {
+    try {
+      const { data } = await axios.get("https://air-quality-back-end-v2.vercel.app/issue")
+      if (!data.isSuccess) {
+        throw new Error(data.message || "Failed to fetch issues")
+      }
+      setIssues(data.issueList || [])
+      // Initialize comment text with existing comments
+      const initialComments = data.issueList.reduce((acc: Record<string, string>, issue: Issue) => {
+        if (issue.comment) {
+          acc[issue._id] = issue.comment
+        }
+        return acc
+      }, {})
+      setCommentText(initialComments)
+      setOriginalCommentText(initialComments)
+      // Initialize all comments as not being edited
+      setEditingComments(data.issueList.reduce((acc: Record<string, boolean>, issue: Issue) => {
+        acc[issue._id] = false
+        return acc
+      }, {}))
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        setError(err.response?.data?.message || err.message)
+      } else {
+        setError(err instanceof Error ? err.message : "An unknown error occurred")
+      }
+      setIssues([])
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const fetchIssues = async () => {
-      try {
-        const { data } = await axios.get("https://air-quality-back-end-v2.vercel.app/issue")
-        if (!data.isSuccess) {
-          throw new Error(data.message || "Failed to fetch issues")
-        }
-        setIssues(data.issueList || [])
-      } catch (err) {
-        if (axios.isAxiosError(err)) {
-          setError(err.response?.data?.message || err.message)
-        } else {
-          setError(err instanceof Error ? err.message : "An unknown error occurred")
-        }
-        setIssues([])
-      } finally {
-        setLoading(false)
-      }
-    }
-
     fetchIssues()
   }, [])
 
@@ -76,67 +94,127 @@ export default function IssueTracker() {
     activeTab === "all" || issue.status.toLowerCase() === activeTab.toLowerCase()
   )
 
-  const handleReply = async (issueId: string) => {
-    if (!replyText[issueId]?.trim()) return
-
-    const newReply = {
-      id: `reply-${Date.now()}`,
-      content: replyText[issueId],
-      created_at: new Date().toISOString(),
-      sender_name: "Support Staff",
-      isStaff: true,
-      avatar: undefined,
+  const handleComment = async (issueId: string) => {
+    if (!commentText[issueId]?.trim()) return;
+  
+    try {
+      // Optimistic update
+      setIssues(prev => prev.map(issue => 
+        issue._id === issueId
+          ? { ...issue, comment: commentText[issueId] }
+          : issue
+      ));
+  
+      // Save the original comment in case we need to revert
+      setOriginalCommentText(prev => ({
+        ...prev,
+        [issueId]: commentText[issueId]
+      }));
+  
+      // API call
+      await axios.post(`https://air-quality-back-end-v2.vercel.app/issue/${issueId}/comment`, {
+        comment: commentText[issueId]
+      });
+  
+      // Disable editing after submission
+      setEditingComments(prev => ({
+        ...prev,
+        [issueId]: false
+      }));
+  
+    } catch (err) {
+      setError(
+        axios.isAxiosError(err) 
+          ? err.response?.data?.message || err.message 
+          : "Failed to add comment"
+      );
+      // Revert optimistic update
+      setIssues(prev => prev.map(issue => 
+        issue._id === issueId
+          ? { ...issue, comment: issues.find(i => i._id === issueId)?.comment || "" }
+          : issue
+      ));
+      // Revert comment text to original
+      setCommentText(prev => ({
+        ...prev,
+        [issueId]: originalCommentText[issueId] || ""
+      }));
     }
+  }
 
-    // try {
-    //   setIssues(prev => prev.map(issue => 
-    //     issue._id === issueId
-    //       ? { ...issue, replies: [...(issue.replies || []), newReply] }
-    //       : issue
-    //   ))
-    //   setReplyText(prev => ({ ...prev, [issueId]: "" }))
+  const handleEditComment = (issueId: string) => {
+    setEditingComments(prev => ({
+      ...prev,
+      [issueId]: true
+    }));
+  }
 
-    //   await api.post(`/issue/${issueId}`, {
-    //     replies: [...(issues.find(i => i._id === issueId)?.replies || []), newReply]
-    //   })
-    // } catch (err) {
-    //   setError(axios.isAxiosError(err) 
-    //     ? err.response?.data?.message || err.message 
-    //     : "Failed to send reply")
-    //   // Revert optimistic update
-    //   setIssues(prev => prev.map(issue => 
-    //     issue._id === issueId
-    //       ? { 
-    //           ...issue, 
-    //           replies: issue.replies?.filter(r => r.id !== newReply.id) 
-    //         }
-    //       : issue
-    //   ))
-    // }
+  const handleCancelEdit = (issueId: string) => {
+    setEditingComments(prev => ({
+      ...prev,
+      [issueId]: false
+    }));
+    // Revert to original comment
+    setCommentText(prev => ({
+      ...prev,
+      [issueId]: originalCommentText[issueId] || ""
+    }));
   }
 
   const updateStatus = async (issueId: string, newStatus: Status) => {
     try {
+      const issueToUpdate = issues.find(issue => issue._id === issueId);
+      if (!issueToUpdate) return;
+
       setIssues(prev => prev.map(issue => 
         issue._id === issueId
           ? { ...issue, status: newStatus }
           : issue
       ));
 
-      // API call
       await axios.post(`https://air-quality-back-end-v2.vercel.app/issue/${issueId}/status`, {
         status: newStatus
       });
+
+      // Only send email if email exists
+      if (issueToUpdate.email) {
+        const emailData = {
+          to: issueToUpdate.email,
+          subject: `Your issue status has been updated to ${newStatus}`,
+          html: `
+            <p>Dear ${issueToUpdate.sender_name},</p>
+            <p>The status of your issue "${issueToUpdate.title}" has been updated to <strong>${newStatus}</strong>.</p>
+            <p>If you have any questions, please reply to this email.</p>
+            <p>Best regards,</p>
+            <p>The Support Team</p>
+          `
+        };
+
+        await axios.post('https://air-quality-back-end-v2.vercel.app/email/send', emailData);
+      }
+
     } catch (err) {
       setError(axios.isAxiosError(err) 
         ? err.response?.data?.message || err.message 
         : "Failed to update status");
-      // Revert optimistic update
       setIssues(prev => prev.map(issue => 
         issue._id === issueId
           ? { ...issue, status: issues.find(i => i._id === issueId)?.status || "Pending" }
           : issue
       ));
+    }
+  }
+
+  const deleteIssue = async (issueId: string) => {
+    setLoading(true);
+    try {
+      await axios.post(`https://air-quality-back-end-v2.vercel.app/issue/${issueId}/delete`);
+      fetchIssues();
+      setShowDelete(false);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error deleting issue", error)
+      setLoading(false);
     }
   }
 
@@ -205,7 +283,6 @@ export default function IssueTracker() {
                     <CardTitle>{issue.title}</CardTitle>
                     <CardDescription className="mt-1">
                       Reported by {issue.sender_name} on {issue.created_at}
-                     
                     </CardDescription>
                     <span className="text-xs opacity-50">{issue.email}</span>
                   </div>
@@ -217,37 +294,17 @@ export default function IssueTracker() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm mb-4">{issue.description}</p>
-
-                {issue.replies && issue.replies.length > 0 && (
-                  <div className="mt-4 space-y-4">
-                    <h3 className="text-sm font-medium flex items-center gap-1">
-                      <MessageSquare className="h-4 w-4" />
-                      Replies
-                    </h3>
-                    {issue.replies.map((reply) => (
-                      <div key={reply.id} className="flex gap-3 pt-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={reply.avatar || "/placeholder.svg"} />
-                          <AvatarFallback>{reply.sender_name.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium">{reply.sender_name}</span>
-                            {reply.isStaff && (
-                              <Badge variant="outline" className="text-xs">
-                                Staff
-                              </Badge>
-                            )}
-                            <span className="text-xs text-muted-foreground">
-                              {new Date(reply.created_at).toLocaleString()}
-                            </span>
-                          </div>
-                          <p className="text-sm mt-1">{reply.content}</p>
-                        </div>
-                      </div>
-                    ))}
+                
+                {/* Display existing comment if any
+                {issue.comment && !editingComments[issue._id] && (
+                  <div className="mt-4 p-3 bg-gray-50 rounded">
+                    <div className="flex items-center gap-2 mb-2">
+                      <MessageSquare className="h-4 w-4 text-gray-500" />
+                      <span className="font-medium">Your Comment</span>
+                    </div>
+                    <p className="text-sm">{issue.comment}</p>
                   </div>
-                )}
+                )} */}
               </CardContent>
               <CardFooter className="flex flex-col items-stretch gap-3 border-t pt-4">
                 <div className="flex flex-wrap gap-2">
@@ -281,20 +338,61 @@ export default function IssueTracker() {
                 </div>
 
                 <div className="flex flex-col gap-2 w-full">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-medium">Comment</h4>
+                    {issue.comment && !editingComments[issue._id] && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEditComment(issue._id)}
+                        className="text-xs h-6"
+                      >
+                        <Edit className="h-3 w-3 mr-1" />
+                        Edit
+                      </Button>
+                    )}
+                  </div>
+                  
                   <Textarea
-                    placeholder="Type your reply here..."
-                    value={replyText[issue._id] || ""}
-                    onChange={(e) => setReplyText({ ...replyText, [issue._id]: e.target.value })}
+                    placeholder="Type your comment here..."
+                    value={commentText[issue._id] || ""}
+                    onChange={(e) => setCommentText({ ...commentText, [issue._id]: e.target.value })}
                     className="min-h-[80px]"
+                    disabled={!!issue.comment && !editingComments[issue._id]}
                   />
-                  <Button
-                    onClick={() => handleReply(issue._id)}
-                    disabled={!replyText[issue._id]?.trim()}
-                    className="self-end"
-                  >
-                    Send Reply
-                  </Button>
+                  
+                  <div className="flex gap-2 self-end">
+                    {editingComments[issue._id] && (
+                      <Button
+                        variant="outline"
+                        onClick={() => handleCancelEdit(issue._id)}
+                        className="text-xs"
+                      >
+                        <X className="h-3 w-3 mr-1" />
+                        Cancel
+                      </Button>
+                    )}
+                    <Button
+                      onClick={() => handleComment(issue._id)}
+                      disabled={!commentText[issue._id]?.trim() || 
+                        (!!issue.comment && !editingComments[issue._id])}
+                      className="text-xs"
+                    >
+                      {issue.comment && !editingComments[issue._id] ? "Save Comment" : "Save Comment"}
+                    </Button>
+                  </div>
                 </div>
+                
+                {issue.status === 'Closed' &&
+                  <DeleteModal 
+                    title={`Delete this issue?`}
+                    description={`Are you sure you want to delete this issue? This action will delete their concern.`}
+                    open={showDelete}
+                    setOpen={setShowDelete}
+                    onClick={() => deleteIssue(issue._id)}
+                    loading={loading}
+                  />
+                }
               </CardFooter>
             </Card>
           ))

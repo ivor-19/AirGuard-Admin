@@ -88,10 +88,12 @@ export function NavUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem onClick={() => router.push('/admin/profile')}>
-                <User2Icon />
-                Profile
-              </DropdownMenuItem>
+              {userCred?.account_id != 'airguard2025' &&
+                <DropdownMenuItem onClick={() => router.push('/admin/profile')}>
+                  <User2Icon />
+                  Profile
+                </DropdownMenuItem>
+              }
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>
