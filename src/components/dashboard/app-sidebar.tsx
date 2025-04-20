@@ -122,7 +122,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <Button className="flex font-geist text-sm" variant={"secondary"} onClick={() => router.push("/admin/chat")}>Group Chat</Button>
+        <Button className="flex font-geist text-sm" variant={"secondary"} onClick={() => router.push("/admin/chat")}>Forum</Button>
         <NavUser user={data.user} />
       </SidebarFooter>
       <SidebarRail />

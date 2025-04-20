@@ -10,13 +10,14 @@ import axios from "axios"
 
 interface User {
   _id: string
-  role: "Student" | "Admin"
+  role: "Student" | "Staff" | "Admin" 
 }
 
 export function UsersCount({ refresh }: { refresh: number }) {
   const [totalUsers, setTotalUsers] = React.useState(0)
   const [studentCount, setStudentCount] = React.useState(0)
   const [adminCount, setAdminCount] = React.useState(0)
+  const [staffCount, setStaffCount] = React.useState(0)
   const [loading, setLoading] = React.useState(true)
 
   const fetchUsers = async () => {
@@ -27,10 +28,12 @@ export function UsersCount({ refresh }: { refresh: number }) {
 
       const admins = users.filter((user) => user.role === "Admin").length
       const students = users.filter((user) => user.role === "Student").length
+      const staff = users.filter((user) => user.role === "Staff").length
 
       setTotalUsers(users.length)
       setStudentCount(students)
       setAdminCount(admins)
+      setStaffCount(staff)
     } catch (error) {
       console.error("Failed to fetch users:", error)
     } finally {
@@ -50,6 +53,12 @@ export function UsersCount({ refresh }: { refresh: number }) {
       percentage: totalUsers ? Math.round((studentCount / totalUsers) * 100) : 0,
     },
     {
+      role: "staff",
+      users: staffCount,
+      fill: "#84cc16",
+      percentage: totalUsers ? Math.round((staffCount / totalUsers) * 100) : 0,
+    },
+    {
       role: "admin",
       users: adminCount,
       fill: "#fde68a",
@@ -62,11 +71,15 @@ export function UsersCount({ refresh }: { refresh: number }) {
       label: "Users",
     },
     student: {
-      label: "Students",
+      label: "Student/s",
       color: "#10b981",
     },
+    staff: {
+      label: "Staff/s",
+      color: "#84cc16",
+    },
     admin: {
-      label: "Admins",
+      label: "Admin/s",
       color: "#f59e0b",
     },
   } satisfies ChartConfig
@@ -121,7 +134,7 @@ export function UsersCount({ refresh }: { refresh: number }) {
               </PieChart>
             </ChartContainer>
 
-            <div className="grid grid-cols-2 gap-4 pt-2">
+            <div className="grid grid-cols-3 gap-4 pt-2">
               {chartData.map((item) => (
                 <div key={item.role} className="flex flex-col rounded-lg border p-3">
                   <div className="flex items-center justify-between">

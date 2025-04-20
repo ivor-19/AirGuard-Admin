@@ -152,6 +152,7 @@ export const AnnouncementModal = () => {
         message: `${messageAlert}\n${airQuality}`,
         sender: userCred?.username,
         role: userCred?.role,
+        avatarPath: userCred?.avatarPath,
         timestamp: chatFormatTime(),
         date: chatFormatDate(),
       }

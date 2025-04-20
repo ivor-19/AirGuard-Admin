@@ -27,7 +27,7 @@ export default function Chat() {
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbPage>Group Chat</BreadcrumbPage>    
+                  <BreadcrumbPage>Forum</BreadcrumbPage>    
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>

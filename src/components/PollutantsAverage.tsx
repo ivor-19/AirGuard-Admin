@@ -3,7 +3,7 @@
 import type React from "react"
 import { useEffect, useState } from "react"
 import axios from "axios"
-import { Wind, Droplets, CloudFog, Gauge, AlertTriangle, Clock, Info, Hourglass } from "lucide-react"
+import { Wind, Droplets, CloudFog, Gauge, AlertTriangle, Clock, Info, Hourglass, Grip, Component } from "lucide-react"
 import { format } from "date-fns"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -143,7 +143,7 @@ export default function AirQualityAverage() {
           {/* Large AQI Display */}
           <div className={`flex flex-col items-center p-6 rounded-xl ${aqiInfo.color}`}>
             <div className="flex items-center gap-2 text-base font-medium mb-1">
-              <Gauge className="h-5 w-5" /> Air Quality Index
+              Average
             </div>
             <div className="text-6xl font-bold my-3">{Math.round(hourlyAverages.aqi)}</div>
             <div className="text-lg font-medium">{aqiInfo.level}</div>
@@ -152,13 +152,13 @@ export default function AirQualityAverage() {
           {/* Pollutant boxes */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <PollutantBox
-              icon={<Droplets />}
+              icon={<Grip />}
               name="PM2.5"
               value={hourlyAverages.pm2_5.toFixed(1)}
               tooltip="Fine particulate matter with diameter less than 2.5 micrometers. Can penetrate deep into lungs and bloodstream."
             />
             <PollutantBox
-              icon={<Wind />}
+              icon={<Component />}
               name="PM10"
               value={hourlyAverages.pm10.toFixed(1)}
               tooltip="Particulate matter with diameter less than 10 micrometers. Can cause respiratory issues."
@@ -170,7 +170,7 @@ export default function AirQualityAverage() {
               tooltip="Carbon Monoxide (CO) is a colorless, odorless gas that can be harmful when inhaled in large amounts."
             />
             <PollutantBox
-              icon={<AlertTriangle />}
+              icon={<Wind />}
               name="NO₂"
               value={hourlyAverages.no2.toFixed(1)}
               tooltip="Nitrogen Dioxide (NO₂) is a gaseous air pollutant produced by combustion processes. Can cause respiratory issues."

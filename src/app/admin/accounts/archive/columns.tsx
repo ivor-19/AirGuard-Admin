@@ -27,9 +27,10 @@ export type User = {
   updated_at?: string;
 }
 
-
-export const archiveColumns = (handleUserSelection: (user: User) => void, handleViewCompleteDetails: (user: User) => void): ColumnDef<User>[] => [
-  
+export const archiveColumns = (
+  handleUserSelection: (user: User) => void, 
+  handleViewCompleteDetails: (user: User) => void
+): ColumnDef<User>[] => [
   {
     id: "select",
     header: ({ table }) => (
@@ -45,7 +46,10 @@ export const archiveColumns = (handleUserSelection: (user: User) => void, handle
     cell: ({ row }) => (
       <Checkbox
         checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
+        onCheckedChange={(value) => {
+          row.toggleSelected(!!value)
+        }}
+        onClick={(e) => e.stopPropagation()} // Prevent row click from triggering here
         aria-label="Select row"
       />
     ),
@@ -62,13 +66,20 @@ export const archiveColumns = (handleUserSelection: (user: User) => void, handle
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
             className="pl-0"
           >
-           
             ID
             <ArrowUpDown className="ml-2 h-4 w-4" /> 
           </Button>
         </div>
       )
     },
+    cell: ({ row }) => (
+      <div 
+        onClick={() => row.toggleSelected(!row.getIsSelected())}
+        className="cursor-pointer"
+      >
+        {row.getValue("account_id")}
+      </div>
+    ),
   },
   {
     accessorKey: "username",
@@ -80,13 +91,20 @@ export const archiveColumns = (handleUserSelection: (user: User) => void, handle
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
             className="pl-0"
           >
-            
             Name
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
         </div>
       )
     },
+    cell: ({ row }) => (
+      <div 
+        onClick={() => row.toggleSelected(!row.getIsSelected())}
+        className="cursor-pointer"
+      >
+        {row.getValue("username")}
+      </div>
+    ),
   },
   {
     accessorKey: "email",
@@ -98,7 +116,6 @@ export const archiveColumns = (handleUserSelection: (user: User) => void, handle
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
             className="pl-0"
           >
-            
             Email
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
@@ -107,8 +124,11 @@ export const archiveColumns = (handleUserSelection: (user: User) => void, handle
     },
     cell: ({ row }) => {
       const email = row.getValue("email") as string
-      return(
-        <div className={`${!email || email.trim() === "" ? 'text-zinc-400' : 'text-[var(--email-color)]'}`}>
+      return (
+        <div 
+          onClick={() => row.toggleSelected(!row.getIsSelected())}
+          className={`cursor-pointer ${!email || email.trim() === "" ? 'text-zinc-400' : 'text-[var(--email-color)]'}`}
+        >
           {!email || email.trim() === "" ? "-----" : email}
         </div>
       )
@@ -124,7 +144,6 @@ export const archiveColumns = (handleUserSelection: (user: User) => void, handle
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
             className="pl-0"
           >
-            
             Role
             <ArrowUpDown className="ml-2 h-4 w-4" /> 
           </Button>
@@ -132,7 +151,10 @@ export const archiveColumns = (handleUserSelection: (user: User) => void, handle
       )
     },
     cell: ({ row }) => (
-      <div className={`capitalize ${row.getValue('role') === 'Admin' ? 'text-yellow-500 font-bold' : ''}`}>
+      <div 
+        onClick={() => row.toggleSelected(!row.getIsSelected())}
+        className={`cursor-pointer capitalize ${row.getValue('role') === 'Admin' ? 'text-yellow-500 font-bold' : ''}`}
+      >
         {row.getValue("role")}
       </div>
     ),
@@ -149,46 +171,50 @@ export const archiveColumns = (handleUserSelection: (user: User) => void, handle
           >
             Updated At
             <ArrowUpDown className="ml-2 h-4 w-2" />
-            
-           
           </Button>
         </div>
       )
     },
+    cell: ({ row }) => (
+      <div 
+        onClick={() => row.toggleSelected(!row.getIsSelected())}
+        className="cursor-pointer"
+      >
+        {row.getValue("updated_at")}
+      </div>
+    ),
   },
   {
     id: "actions",
     cell: ({ row }) => {
       const user = row.original
-     
-
+      
       return (
-        <>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0 font-geist">
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="font-geist">
-              <DropdownMenuItem
-                onClick={() => navigator.clipboard.writeText(user.account_id)}
-              >
-                <Copy />
-                Copy Account ID
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => handleViewCompleteDetails(user)}>
-                <View />
-                View Complete Details
-              </DropdownMenuItem>
-
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-        </>
-       
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button 
+              variant="ghost" 
+              className="h-8 w-8 p-0 font-geist"
+              onClick={(e) => e.stopPropagation()} // Prevent row click from triggering here
+            >
+              <span className="sr-only">Open menu</span>
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="font-geist">
+            <DropdownMenuItem
+              onClick={() => navigator.clipboard.writeText(user.account_id)}
+            >
+              <Copy className="mr-2 h-4 w-4" />
+              Copy Account ID
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => handleViewCompleteDetails(user)}>
+              <View className="mr-2 h-4 w-4" />
+              View Complete Details
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       )
     },
   },

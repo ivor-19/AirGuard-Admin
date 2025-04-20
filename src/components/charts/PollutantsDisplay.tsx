@@ -43,12 +43,18 @@ const aqiLevels: AQILevel[] = [
 ]
 
 const getAqiLevel = (aqi: number): AQILevel => {
+  const cappedAqi = aqi > 500 ? 500 : aqi
   for (const level of aqiLevels) {
-    if (aqi <= level.max) {
+    if (cappedAqi <= level.max) {
       return level
     }
   }
   return aqiLevels[aqiLevels.length - 1]
+}
+
+const capValue = (value?: number): number | string => {
+  if (value === undefined) return "-"
+  return value > 500 ? 500 : value
 }
 
 export function PollutantsDisplay() {
@@ -124,7 +130,7 @@ export function PollutantsDisplay() {
                 <div className="relative">
                   <div className="flex flex-col items-center">
                     <div className={cn("text-8xl font-bold mb-2", aqiLevel.textColor)}>
-                      {readings?.aqi.toLocaleString() || "0"}
+                      {capValue(readings?.aqi)}
                     </div>
                     <div className="text-xl text-muted-foreground mb-4">AQI</div>
                   </div>
@@ -133,7 +139,7 @@ export function PollutantsDisplay() {
                   {aqiLevel.label}
                 </div>
                 <AnnouncementModal />
-                <div className="flex gap-2">
+                <div className="flex gap-2 mt-2">
                   <span className="text-xs text-muted-foreground">
                     Device is turned: 
                   </span>
@@ -211,7 +217,7 @@ function PollutantCard({ title, value, trend, description }: PollutantCardProps)
         <div>{trend}</div>
       </div>
       <div className="flex items-baseline gap-1">
-        <span className="text-2xl font-bold">{value !== undefined ? value : "-"}</span>
+        <span className="text-2xl font-bold">{capValue(value)}</span>
       </div>
       <div className="text-xs text-muted-foreground mt-1">{description}</div>
     </div>

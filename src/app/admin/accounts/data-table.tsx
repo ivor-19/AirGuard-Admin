@@ -68,7 +68,7 @@ const FormSchema = z.object({
   accountId: z.string().min(10, {message: "Account ID must have atleast 10 characters"}),
   name: z.string().min(1, {message: "Name is required"}),
   email: z.string(),
-  role: z.enum(["Admin", "Student"], {message: "Invalid role"}),
+  role: z.enum(["Admin", "Student", "Staff"], {message: "Invalid role"}),
   status: z.enum(["Available", "Blocked"], {message: "Invalid status"})
 })
 
@@ -102,6 +102,16 @@ export default function DataTable() {
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
+
+  const avatars = {
+    koala: '/user-avatars/koala.png',
+    beaver:'/user-avatars/beaver.png',
+    dog: '/user-avatars/dog.png',
+    kangaroo: '/user-avatars/kangaroo.png',
+    platypus:'/user-avatars/platypus.png',
+    lemur: '/user-avatars/lemur.png',
+    default: '/user-avatars/lemur.png', // fallback avatar
+  };
 
   const handleImportClick = () => {
     fileInputRef.current?.click();
@@ -192,7 +202,7 @@ export default function DataTable() {
       setValue("accountId", selectedUser.account_id);
       setValue("name", selectedUser.username);
       setValue("email", selectedUser.email);
-      setValue("role", selectedUser.role as "Admin" | "Student");
+      setValue("role", selectedUser.role as "Admin" | "Student" | "Staff");
       setValue("status", selectedUser.status as "Available" | "Blocked");
     }
   }, [selectedUser, setValue]); 
@@ -217,8 +227,10 @@ export default function DataTable() {
       const selectedRows = table.getSelectedRowModel().rows;
       for (const row of selectedRows) {
         const userId = row.original._id;
-        await axios.post(`https://air-quality-back-end-v2.vercel.app/users/deleteUser/${userId}`);
+        const response = await axios.post(`https://air-quality-back-end-v2.vercel.app/users/deleteUser/${userId}`);
+        console.log(response.data)
       }
+      
       toast.info(`(${selectedRows.length}) User/s has been deleted.`)
       fetchUsers();
       setRowSelection({});
@@ -235,11 +247,11 @@ export default function DataTable() {
     setLoading(true);
     let newPassword;
 
-    if(selectedUser?.role === 'Student'){
-      newPassword = {password: '@Student01'}
+    if(selectedUser?.role === 'Admin'){
+      newPassword = {password: '@Admin01'}
     }
     else{
-      newPassword = {password: '@Admin01'}
+      newPassword = {password: '@Password01'}
     }
     console.log(newPassword)
     try {
@@ -279,6 +291,8 @@ export default function DataTable() {
     }
   }
 
+  const [globalFilter, setGlobalFilter] = useState('');
+
   const table = useReactTable({
     data: users,
     columns: columns(handleUserSelection, handleViewCompleteDetails, handleResetPassword),
@@ -291,10 +305,19 @@ export default function DataTable() {
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
     state: {
+      globalFilter,
       sorting,
       columnFilters,
       columnVisibility,
       rowSelection,
+    },
+    onGlobalFilterChange: setGlobalFilter,
+    globalFilterFn: (row, columnId, filterValue) => {
+      const search = filterValue.toLowerCase();
+      
+      return Object.values(row.original).some(value => 
+        String(value).toLowerCase().includes(search)
+      );
     },
     initialState: {
       pagination: {
@@ -348,7 +371,7 @@ export default function DataTable() {
           <div className="grid auto-rows-min gap-4 grid-cols-2 max-lg:grid-cols-1">
             <UsersCount refresh={refresh}/>
             <UsersStatus refresh={refresh}/>
-            <Card ></Card>
+
           </div>
           <div className="min-h-[100vh] flex-1 rounded-xl md:min-h-min relative ">
             <Card className="absolute left-0 right-0 bg-[var(--table-bg)] p-4 rounded-lg shadow-xl">
@@ -356,11 +379,9 @@ export default function DataTable() {
                 <div className="flex py-4 font-geist justify-between max-lg:flex-col gap-4">
                   <div className="flex gap-2">
                     <Input
-                      placeholder="Search ID...."
-                      value={(table.getColumn("account_id")?.getFilterValue() as string) ?? ""}
-                      onChange={(event) =>
-                        table.getColumn("account_id")?.setFilterValue(event.target.value)
-                      }
+                      placeholder="Search....."
+                      value={globalFilter ?? ""}
+                      onChange={(event) => setGlobalFilter(event.target.value)}
                       className="w-full"
                     />
                     <DropdownMenu>
@@ -648,6 +669,7 @@ export default function DataTable() {
                           >
                             <option value="" disabled>Select role</option>
                             <option value="Student">Student</option>
+                            <option value="Staff">Staff</option>
                             <option value="Admin">Admin</option>
                           </select>
                           {errors.role && <p className="text-red-500 text-xs">{errors.role.message}</p>}
@@ -694,6 +716,13 @@ export default function DataTable() {
                       <DialogTitle className="text-xl font-semibold">User Complete Details</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4 font-geist text-sm">
+                      <div className="flex justify-center">
+                        <img 
+                          src={avatars[selectedUser?.avatarPath as keyof typeof avatars] || avatars.default}
+                          className="rounded-full w-24 h-24 object-cover mb-4"
+                        />
+                      </div>
+                      
                       <div className="grid grid-cols-[100px_1fr] gap-y-3">
                         <div className="text-sm text-muted-foreground">Account ID:</div>
                         <div className="flex items-center gap-2 font-mono text-sm">
@@ -702,7 +731,7 @@ export default function DataTable() {
                         </div>
 
                         <div className="text-sm text-muted-foreground">Name:</div>
-                        <div className=" flex items-center gap-2">
+                        <div className="flex items-center gap-2">
                           <User2 className="h-4 w-4 text-muted-foreground" />
                           {selectedUser?.username}
                         </div>
@@ -712,10 +741,8 @@ export default function DataTable() {
                           <Mail className="h-4 w-4 text-muted-foreground" />
                           {selectedUser?.email === " " ? (
                             <span className="opacity-80">(none)</span>
-                          ):(
-                            <>
-                             {selectedUser?.email}
-                            </>
+                          ) : (
+                            selectedUser?.email
                           )}
                         </div>
 
@@ -774,7 +801,7 @@ export default function DataTable() {
                       <div className="border-amber-200 bg-amber-50 text-amber-800 p-4 rounded-md flex gap-2">
                         <AlertCircle className="h-8 w-8" />
                         <AlertDescription>
-                          The user will receive a notification with the default password. @Student01 for Students and @Admin01 for Admins
+                          The user will receive a notification with the default password. @Admin01 for Admins and @Password01 for other roles.
                         </AlertDescription>
                       </div>
 
@@ -809,7 +836,8 @@ export default function DataTable() {
                   <AlertDialogContent className='font-geist flex items-center justify-center'>
                     <AlertDialogHeader className='flex flex-col items-center justify-center'>
                       <Loader className='animate-spin'/>
-                      <AlertDialogTitle className='text-sm'>Uploading</AlertDialogTitle>
+                      <AlertDialogTitle className="text-sm font-medium">Upload in Progress</AlertDialogTitle>
+                      <AlertDialogDescription>Users without email addresses or roles will be skipped</AlertDialogDescription>
                     </AlertDialogHeader>
                   </AlertDialogContent>
                 </AlertDialog>

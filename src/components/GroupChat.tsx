@@ -12,7 +12,7 @@ import axios from "axios"
 import { useAuth } from "@/app/context/AuthContext"
 import { toast } from "sonner"
 
-type Message = { _id: string; message: string; sender: string; role: string; timestamp: string; date: string; __v?: number }
+type Message = { _id: string; message: string; sender: string; role: string; timestamp: string; avatarPath: string, date: string; __v?: number }
 
 export function GroupChat() {
   const {userCred} = useAuth();
@@ -65,47 +65,58 @@ export function GroupChat() {
 
   useEffect(() => { if (isLoading) return; if (!hasInitialScroll.current) { scrollToBottom(); hasInitialScroll.current = true } }, [isLoading])
 
-  const handleSendMessage = async () => {
-    if (!newMessage.trim()) return
-    setSendLoading(true);
-    try {
-      const m =  { message: newMessage, sender: currentUser.name, role: currentUser.role,  timestamp: chatFormatTime(), date: chatFormatDate()}
-      const { data } = await axios.post('https://air-quality-back-end-v2.vercel.app/chat', m)
-      setMessages((prev) => [...prev, data])
-      console.log(m)
-      const responseCred = await axios.get(`https://air-quality-back-end-v2.vercel.app/users/${userCred?._id}`);
-      const userDeviceNotif = responseCred.data.user.device_notif;
+    const handleSendMessage = async () => {
+      if (!newMessage.trim()) return;
       
-      const response = await axios.get('https://air-quality-back-end-v2.vercel.app/users/notifications/getNotifs');
-      let tokens = response.data.allDeviceNotifs;
+      setSendLoading(true);
       
-      tokens = tokens.filter((token : string) => token !== userDeviceNotif);
-      
-      // Only send notifications if there are remaining tokens
-      if (tokens.length > 0) {
-        await axios.post("https://air-quality-back-end-v2.vercel.app/expoToken/sendNotification", {
-          to: tokens,
-          title: "Air Guard Chat",
-          body: `${currentUser.name}: ${newMessage}`,
-          sound: "default"
-        });
-      }
+      try {
+        // Create message object
+        const m = { 
+          message: newMessage, 
+          sender: currentUser.name, 
+          role: currentUser.role,  
+          avatarPath: userCred?.avatarPath,
+          timestamp: chatFormatTime(), 
+          date: chatFormatDate() 
+        };
+    
+        // Send message to chat
+        const { data } = await axios.post('https://air-quality-back-end-v2.vercel.app/chat', m);
+        setMessages((prev) => [...prev, data]);
+        
+        // Get all device tokens
+        const response = await axios.get('https://air-quality-back-end-v2.vercel.app/users/notifications/getNotifs');
+        let tokens = response.data.allDeviceNotifs;
 
-      setNewMessage("")
-      setTimeout(scrollToBottom, 100)
-      setSendLoading(false);
-    } catch (error) { 
-      console.error("Error sending message:", error) 
-      toast.error("Something went wrong...")
-      setSendLoading(false);
+        
+        // Send notification to remaining tokens if any exist
+        if (tokens.length > 0) {
+          await axios.post("https://air-quality-back-end-v2.vercel.app/expoToken/sendNotification", {
+            to: tokens,
+            title: "Air Guard Chat",
+            body: `${currentUser.name}: ${newMessage}`,
+            sound: "default"
+          });
+        }
+    
+        // Reset message input and UI
+        setNewMessage("");
+        setTimeout(scrollToBottom, 100);
+        setSendLoading(false);
+        
+      } catch (error) { 
+        console.error("Error sending message:", error);
+        toast.error("Something went wrong...");
+        setSendLoading(false);
+      }
     }
-  }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSendMessage() } }
 
   return (
     <Card className="w-full font-geist">
-      <CardHeader className="p-4 border-b"><div className="flex items-center space-x-2"><div className="font-medium">Group Chat</div></div></CardHeader>
+      <CardHeader className="p-4 border-b"><div className="flex items-center space-x-2"><div className="font-medium">Forum</div></div></CardHeader>
       <CardContent className="p-0">
         <ScrollArea className="h-[600px] p-4">
           {isLoading ? (
@@ -149,9 +160,37 @@ export function GroupChat() {
 }
 
 function ChatMessage({ message, isCurrentUser }: { message: Message; isCurrentUser: boolean }) {
+  const avatars = {
+    koala: '/user-avatars/koala.png',
+    beaver: '/user-avatars/beaver.png',
+    dog: '/user-avatars/dog.png',
+    kangaroo: '/user-avatars/kangaroo.png',
+    platypus: '/user-avatars/platypus.png',
+    lemur: '/user-avatars/lemur.png',
+    default: '/user-avatars/lemur.png',
+  };
+
+  // Get the avatar path from the message or use default
+  const avatarPath = message.avatarPath && avatars[message.avatarPath as keyof typeof avatars] 
+    ? avatars[message.avatarPath as keyof typeof avatars] 
+    : avatars.default;
+
   return (
     <div className={cn("flex items-start gap-2 max-w-[80%]", isCurrentUser ? "ml-auto flex-row-reverse" : "")}>
-      {!isCurrentUser && <Avatar className="h-8 w-8 mt-1"><CircleUserRound /></Avatar>}
+      {!isCurrentUser && (
+        <Avatar className="h-8 w-8 mt-1">
+          <img 
+            src={avatarPath} 
+            alt={message.sender} 
+            className="h-full w-full object-cover"
+            onError={(e) => {
+              // Fallback to default avatar if image fails to load
+              const img = e.target as HTMLImageElement;
+              img.src = avatars.default;
+            }}
+          />
+        </Avatar>
+      )}
       <div>
         <div className={cn("rounded-lg p-3", isCurrentUser ? "bg-primary text-primary-foreground rounded-tr-none" : "bg-muted rounded-tl-none")}>
           {!isCurrentUser && <div className="flex justify-between items-center mb-1"><p className="text-xs font-medium">{message.sender}</p><span className="text-xs text-muted-foreground ml-2">{message.role}</span></div>}
@@ -162,5 +201,5 @@ function ChatMessage({ message, isCurrentUser }: { message: Message; isCurrentUs
         </div>
       </div>
     </div>
-  )
+  );
 }

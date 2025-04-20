@@ -201,8 +201,8 @@ export default function AccountPage() {
               )}
             </CardContent>
           </Card>
-          <ImageGallery />
-          <ImageUpload />
+          {/* <ImageGallery />
+          <ImageUpload /> */}
         </div>
       </div>
     </div>

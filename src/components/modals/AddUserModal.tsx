@@ -36,7 +36,7 @@ const FormSchema = z.object({
   accountId: z.string().min(4, {message: "Account ID must have atleast 4 characters"}),
   name: z.string().min(1, {message: "Name is required"}),
   email: z.string().email().optional(),
-  role: z.enum(["Student", "Admin"]).default("Student")
+  role: z.enum(["Student", "Admin", "Staff"]).default("Student")
 })
 
 type FormData = z.infer<typeof FormSchema>;
@@ -58,7 +58,7 @@ export const AddUserModal = ({open, setOpen, fetch} : AddUserModalProps) => {
     setLoading(true);
     setUserExists(false);
     setEmailExists(false);
-    const password = data.role === "Student" ? "@Student01" : "@Admin01";
+    const password = data.role === "Admin" ? "@Admin01" : "@Password01";
 
     const newUser = {
       account_id: data.accountId, 
@@ -176,13 +176,14 @@ export const AddUserModal = ({open, setOpen, fetch} : AddUserModalProps) => {
             </Label>
             <Select 
               value={role}
-              onValueChange={(value: "Student" | "Admin") => setValue("role", value)}
+              onValueChange={(value: "Student" | "Admin" | "Staff") => setValue("role", value)}
             >
               <SelectTrigger className="w-[180px] font-geist">
                 <SelectValue placeholder="Select role" />
               </SelectTrigger>
               <SelectContent className='font-geist'>
                 <SelectItem value="Student">Student</SelectItem>
+                <SelectItem value="Staff">Staff</SelectItem>
                 <SelectItem value="Admin">Admin</SelectItem>
               </SelectContent>
             </Select>

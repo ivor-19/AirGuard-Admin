@@ -60,7 +60,7 @@ const FormSchema = z.object({
   accountId: z.string().min(10, {message: "Account ID must have atleast 10 characters"}),
   name: z.string().min(1, {message: "Name is required"}),
   email: z.string(),
-  role: z.enum(["Admin", "Student"], {message: "Invalid role"}),
+  role: z.enum(["Admin", "Student", "Staff"], {message: "Invalid role"}),
   status: z.enum(["Available", "Blocked"], {message: "Invalid status"})
 })
 
@@ -155,6 +155,8 @@ export default function ArchiveDataTable() {
     }
   }
 
+  const [globalFilter, setGlobalFilter] = useState('');
+
   const table = useReactTable({
     data: users,
     columns: archiveColumns(handleUserSelection, handleViewCompleteDetails),
@@ -167,10 +169,19 @@ export default function ArchiveDataTable() {
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
     state: {
+      globalFilter,
       sorting,
       columnFilters,
       columnVisibility,
       rowSelection,
+    },
+    onGlobalFilterChange: setGlobalFilter,
+    globalFilterFn: (row, columnId, filterValue) => {
+      const search = filterValue.toLowerCase();
+      
+      return Object.values(row.original).some(value => 
+        String(value).toLowerCase().includes(search)
+      );
     },
     initialState: {
       pagination: {
@@ -222,14 +233,12 @@ export default function ArchiveDataTable() {
               <div className="w-full">
                 <div className="flex py-4 font-geist justify-between max-lg:flex-col gap-4">
                   <div className="flex gap-2">
-                    <Input
-                      placeholder="Search ID...."
-                      value={(table.getColumn("account_id")?.getFilterValue() as string) ?? ""}
-                      onChange={(event) =>
-                        table.getColumn("account_id")?.setFilterValue(event.target.value)
-                      }
-                      className="w-full"
-                    />
+                     <Input
+                        placeholder="Search....."
+                        value={globalFilter ?? ""}
+                        onChange={(event) => setGlobalFilter(event.target.value)}
+                        className="w-full"
+                      />
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="outline" className="ml-auto border-dashed bg-transparent">
@@ -445,20 +454,7 @@ export default function ArchiveDataTable() {
                           {selectedUser?.role}
                         </div>
 
-                        <div className="text-sm text-muted-foreground">Status:</div>
-                        <div>
-                          {selectedUser?.status === "Available" ? (
-                            <Badge className="bg-green-200 text-green-800 hover:bg-green-200 flex items-center gap-1 w-fit">
-                              <CircleCheck className="h-3.5 w-3.5" />
-                              Available
-                            </Badge>
-                          ) : (
-                            <Badge className="bg-red-200 text-red-900 hover:bg-red-200 flex items-center gap-1 w-fit">
-                              <CircleX className="h-3.5 w-3.5" />
-                              Blocked
-                            </Badge>
-                          )}
-                        </div>
+                       
                       </div>
 
                       <Separator />
