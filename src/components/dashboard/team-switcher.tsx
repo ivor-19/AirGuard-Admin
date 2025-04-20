@@ -13,6 +13,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { ModeToggle } from "../ModeToggle"
+import Image from "next/image"
 
 export function TeamSwitcher({
   teams,

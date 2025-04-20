@@ -1,4 +1,5 @@
 // components/ImageGallery.tsx
+import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
 interface Blob {
@@ -50,7 +51,7 @@ export default function ImageGallery() {
           boxShadow: '0 2px 4px rgba(0,0,0,0.1)' 
         }}>
           <h3 style={{ marginTop: 0 }}>{blob.name}</h3>
-          <img 
+          <Image 
             src={blob.image} 
             alt={blob.name} 
             style={{ 

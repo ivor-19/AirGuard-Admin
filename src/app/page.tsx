@@ -46,7 +46,8 @@ export default function Home() {
           account_id: "airguard2025",
           username: "Air Guard",
           role: "Admin",
-          email: "airguard.alert@gmail.com"
+          email: "airguard.alert@gmail.com",
+          avatarPath: "lemur"
         };
         
         // Login without token (will be treated as static admin)

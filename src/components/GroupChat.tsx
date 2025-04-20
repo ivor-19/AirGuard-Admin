@@ -87,7 +87,7 @@ export function GroupChat() {
         
         // Get all device tokens
         const response = await axios.get('https://air-quality-back-end-v2.vercel.app/users/notifications/getNotifs');
-        let tokens = response.data.allDeviceNotifs;
+        const tokens = response.data.allDeviceNotifs;
 
         
         // Send notification to remaining tokens if any exist
