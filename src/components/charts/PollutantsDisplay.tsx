@@ -42,6 +42,45 @@ const aqiLevels: AQILevel[] = [
   { max: 400, label: "Extremely High", color: "#581845", textColor: "text-purple-800", bgColor: "var(--gray-counter)" },
 ]
 
+const getAqiMessage = (aqi: number) => {
+  if (aqi <= 10) return {
+    message: "Alert: Air quality is optimal, no health concerns. Outdoor activities can continue as usual.",
+    subject: "Air Quality: Optimal",
+    risk: 'Minimal Risk',
+    condition: 'Conditions are stable and low-risk, requiring minimal attention.'
+  };
+  if (aqi <= 40) return {
+    message: "Advisory: Air quality is acceptable. Minor precautions may be needed for sensitive individuals.",
+    subject: "Air Quality: Acceptable",
+    risk: 'Mild Risk',
+    condition: 'Mild'
+  };
+  if (aqi <= 90) return {
+    message: "Warning: Air quality is moderate. Sensitive individuals may experience mild symptoms",
+    subject: "Air Quality: Moderate",
+    risk: 'Moderate Risk',
+    condition: 'Raised'
+  };
+  if (aqi <= 200) return {
+    message: "Warning: Air quality is dangerous. People with respiratory or heart conditions should go far from areas with poor air quality to reduce exposure.",
+    subject: "Air Quality: High - Health Alert",
+    risk: 'Unhealthy for Sensitive Groups',
+    condition: 'Serious'
+  };
+  if (aqi <= 280) return {
+    message: "Advisory: Air quality is very dangerous. Everyone should avoid outdoor activities and move far from areas with poor air quality. Vulnerable individuals should prioritize safety and avoid exposure.",
+    subject: "Air Quality: Very High - Urgent",
+    risk: 'Very High Risk',
+    condition: 'Severe'
+  };
+  return {
+    message: "Emergency: Air quality is critically hazardous. It is strongly advised that everyone go far from affected areas and take necessary precautions.",
+    subject: "Air Quality: Emergency - Critical",
+    risk: 'Extremely High',
+    condition: 'Hazardous'
+  };
+};
+
 const getAqiLevel = (aqi: number): AQILevel => {
   const cappedAqi = aqi > 500 ? 500 : aqi
   for (const level of aqiLevels) {
@@ -118,11 +157,20 @@ export function PollutantsDisplay() {
         <Skeleton className="w-full h-full"/>
       ):(
         <Card className="flex flex-col font-geist overflow-hidden">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Gauge className="h-5 w-5" />Air Quality Index
-            </CardTitle>
-            <CardDescription>Real-time AQI Monitoring</CardDescription>
+          <CardHeader className="flex flex-row justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Gauge className="h-5 w-5" />Air Quality Index
+              </CardTitle>
+              <CardDescription>Real-time AQI Monitoring</CardDescription>
+            </div>
+            <div className="flex gap-2 mt-2">
+              {readings?.status === "on" ? (
+                <div className="bg-green-400 h-3 w-3 rounded-full"></div>
+              ):(
+                <div className="bg-red-800 h-3 w-3 rounded-full"></div>
+              )}
+            </div>
           </CardHeader>
           <CardContent className="p-0">
             <div className="flex flex-col md:flex-row">
@@ -135,20 +183,13 @@ export function PollutantsDisplay() {
                     <div className="text-xl text-muted-foreground mb-4">AQI</div>
                   </div>
                 </div>
-                <div className={cn("mt-2 px-4 py-2 rounded-full text-sm font-medium mb-2", aqiLevel.textColor)}>
+                <div className={cn("mt-2 px-4 py-2 rounded-full text-sm font-medium", aqiLevel.textColor)}>
                   {aqiLevel.label}
                 </div>
-                <AnnouncementModal />
-                <div className="flex gap-2 mt-2">
-                  <span className="text-xs text-muted-foreground">
-                    Device is turned: 
-                  </span>
-                  {readings?.status === "on" ? (
-                    <span className="text-xs text-green-400 font-medium">ON</span>
-                  ):(
-                    <span className="text-xs text-red-800 font-medium">OFF</span>
-                  )}
+                <div className="text-xs text-muted-foreground mb-2 flex text-center">
+                  {readings ? getAqiMessage(readings.aqi).message : "Loading air quality information..."}
                 </div>
+                <AnnouncementModal />
               </div>
     
               <div className="w-full md:w-1/2 p-6">
