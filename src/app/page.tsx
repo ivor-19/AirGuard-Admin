@@ -77,7 +77,7 @@ export default function Home() {
       setLoading(false);
       if(axios.isAxiosError(error) && error.response){
         const errorMessage = error.response.data.message;
-        if(errorMessage === "Student does not exists"){
+        if(errorMessage === "Account does not exists"){
           setErrorDescription("Account does not exist. Please try again.");
           setErrorAlert(true);
         } 

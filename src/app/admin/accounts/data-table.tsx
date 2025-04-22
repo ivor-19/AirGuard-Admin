@@ -65,10 +65,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useRouter } from "next/navigation"
 
 const FormSchema = z.object({
-  accountId: z.string().min(10, {message: "Account ID must have atleast 10 characters"}),
+  accountId: z.string().min(4, {message: "Account ID must have atleast 10 characters"}),
   name: z.string().min(1, {message: "Name is required"}),
   email: z.string(),
-  role: z.enum(["Admin", "Student", "Staff"], {message: "Invalid role"}),
+  role: z.enum(["Admin", "User"], {message: "Invalid role"}),
   status: z.enum(["Available", "Blocked"], {message: "Invalid status"})
 })
 
@@ -202,7 +202,7 @@ export default function DataTable() {
       setValue("accountId", selectedUser.account_id);
       setValue("name", selectedUser.username);
       setValue("email", selectedUser.email);
-      setValue("role", selectedUser.role as "Admin" | "Student" | "Staff");
+      setValue("role", selectedUser.role as "Admin" | "User");
       setValue("status", selectedUser.status as "Available" | "Blocked");
     }
   }, [selectedUser, setValue]); 
@@ -668,8 +668,7 @@ export default function DataTable() {
                             className="w-[180px] p-2 border rounded-md font-geist"
                           >
                             <option value="" disabled>Select role</option>
-                            <option value="Student">Student</option>
-                            <option value="Staff">Staff</option>
+                            <option value="User">User</option>
                             <option value="Admin">Admin</option>
                           </select>
                           {errors.role && <p className="text-red-500 text-xs">{errors.role.message}</p>}

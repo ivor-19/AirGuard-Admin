@@ -230,14 +230,9 @@ export const columns = (
         row={row}
       >
         <div className={`capitalize}`}>
-          {row.getValue("role") === "Student" ? (
+          {row.getValue("role") === "User" ? (
             <Badge className="px-2 py-1 text-xs font-medium bg-purple-200 text-purple-700 hover:bg-purple-50 gap-1">
               <User className="h-3.5 w-3.5" />
-              {row.getValue("role")}
-            </Badge>
-          ): row.getValue("role") === "Staff" ? (
-            <Badge className="px-2 py-1 text-xs font-medium bg-lime-50 text-lime-700 hover:bg-lime-50 gap-1">
-              <SquareUserRound className="h-3.5 w-3.5" />
               {row.getValue("role")}
             </Badge>
           ):(

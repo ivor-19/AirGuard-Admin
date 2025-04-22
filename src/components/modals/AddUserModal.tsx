@@ -36,7 +36,7 @@ const FormSchema = z.object({
   accountId: z.string().min(4, {message: "Account ID must have atleast 4 characters"}),
   name: z.string().min(1, {message: "Name is required"}),
   email: z.string().email().optional(),
-  role: z.enum(["Student", "Admin", "Staff"]).default("Student")
+  role: z.enum(["User", "Admin"]).default("User")
 })
 
 type FormData = z.infer<typeof FormSchema>;
@@ -45,7 +45,7 @@ export const AddUserModal = ({open, setOpen, fetch} : AddUserModalProps) => {
   const { register, handleSubmit, formState: {errors}, reset, setError, setValue, watch } = useForm<FormData>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
-      role: "Student",
+      role: "User",
     }
   })
   const [userExists, setUserExists] = useState(false);
@@ -77,7 +77,7 @@ export const AddUserModal = ({open, setOpen, fetch} : AddUserModalProps) => {
         accountId: "",
         name: "",
         email: "",
-        role: "Student"
+        role: "User"
       });
       fetch();
       setLoading(false);
@@ -176,21 +176,20 @@ export const AddUserModal = ({open, setOpen, fetch} : AddUserModalProps) => {
             </Label>
             <Select 
               value={role}
-              onValueChange={(value: "Student" | "Admin" | "Staff") => setValue("role", value)}
+              onValueChange={(value: "User" | "Admin") => setValue("role", value)}
             >
               <SelectTrigger className="w-[180px] font-geist">
                 <SelectValue placeholder="Select role" />
               </SelectTrigger>
               <SelectContent className='font-geist'>
-                <SelectItem value="Student">Student</SelectItem>
-                <SelectItem value="Staff">Staff</SelectItem>
+                <SelectItem value="User">User</SelectItem>
                 <SelectItem value="Admin">Admin</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
         <DialogFooter className="flex items-center">
-          <span className="text-gray-500 text-xs font-geist"> Password will be automatically set to @Student01 for Students or @Admin01 for Admins.</span>
+          <span className="text-gray-500 text-xs font-geist"> Password will be automatically set to @Password01 for Users or @Admin01 for Admins.</span>
           <Button onClick={handleSubmit(addUser)}> 
             {loading ? ( 
               <>

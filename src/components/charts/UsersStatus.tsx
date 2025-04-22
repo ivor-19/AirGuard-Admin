@@ -107,9 +107,9 @@ export function UsersStatus({ refresh }: { refresh: number }) {
           <div>
             <CardTitle className="flex items-center gap-2">
               <ShieldQuestion className="h-5 w-5" />
-              Users Status Overview
+              Accounts Status Overview
             </CardTitle>
-            <CardDescription className="text-xs">Distribution of user accounts by status</CardDescription>
+            <CardDescription className="text-xs">Distribution of accounts by status</CardDescription>
           </div>
         </div>
       </CardHeader>
@@ -120,7 +120,7 @@ export function UsersStatus({ refresh }: { refresh: number }) {
           </div>
         ) : totalUsers === 0 ? (
           <div className="flex items-center justify-center h-44">
-            <span className="text-muted-foreground text-sm">No users found</span>
+            <span className="text-muted-foreground text-sm">No account found</span>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
@@ -139,7 +139,7 @@ export function UsersStatus({ refresh }: { refresh: number }) {
             <TrendingUp className="h-4 w-4" />
             Status Distribution
           </div>
-          <div className="text-xs text-muted-foreground mt-1">Showing the total number of available and blocked users</div>
+          <div className="text-xs text-muted-foreground mt-1">Showing the total number of available and blocked accounts</div>
         </div>
       </CardFooter>
     </Card>

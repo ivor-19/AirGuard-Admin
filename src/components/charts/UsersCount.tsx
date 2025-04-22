@@ -10,14 +10,13 @@ import axios from "axios"
 
 interface User {
   _id: string
-  role: "Student" | "Staff" | "Admin" 
+  role: "User" | "Admin" 
 }
 
 export function UsersCount({ refresh }: { refresh: number }) {
   const [totalUsers, setTotalUsers] = React.useState(0)
-  const [studentCount, setStudentCount] = React.useState(0)
   const [adminCount, setAdminCount] = React.useState(0)
-  const [staffCount, setStaffCount] = React.useState(0)
+  const [userCount, setUserCount] = React.useState(0)
   const [loading, setLoading] = React.useState(true)
 
   const fetchUsers = async () => {
@@ -27,13 +26,11 @@ export function UsersCount({ refresh }: { refresh: number }) {
       const users: User[] = response.data.users
 
       const admins = users.filter((user) => user.role === "Admin").length
-      const students = users.filter((user) => user.role === "Student").length
-      const staff = users.filter((user) => user.role === "Staff").length
+      const usersR = users.filter((user) => user.role === "User").length
 
       setTotalUsers(users.length)
-      setStudentCount(students)
+      setUserCount(usersR)
       setAdminCount(admins)
-      setStaffCount(staff)
     } catch (error) {
       console.error("Failed to fetch users:", error)
     } finally {
@@ -47,16 +44,10 @@ export function UsersCount({ refresh }: { refresh: number }) {
 
   const chartData = [
     {
-      role: "student",
-      users: studentCount,
+      role: "user",
+      users: userCount,
       fill: "#9333ea",
-      percentage: totalUsers ? Math.round((studentCount / totalUsers) * 100) : 0,
-    },
-    {
-      role: "staff",
-      users: staffCount,
-      fill: "#84cc16",
-      percentage: totalUsers ? Math.round((staffCount / totalUsers) * 100) : 0,
+      percentage: totalUsers ? Math.round((userCount / totalUsers) * 100) : 0,
     },
     {
       role: "admin",
@@ -70,13 +61,9 @@ export function UsersCount({ refresh }: { refresh: number }) {
     users: {
       label: "Users",
     },
-    student: {
-      label: "Student/s",
+    userR: {
+      label: "User/s",
       color: "#10b981",
-    },
-    staff: {
-      label: "Staff/s",
-      color: "#84cc16",
     },
     admin: {
       label: "Admin/s",
@@ -90,9 +77,9 @@ export function UsersCount({ refresh }: { refresh: number }) {
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />Users Count Overview
+              <Users className="h-5 w-5" />Accounts Overview
             </CardTitle>
-            <CardDescription className="text-xs">Showing the total number of users</CardDescription>
+            <CardDescription className="text-xs">Showing the total number of accounts</CardDescription>
           </div>
         </div>
       </CardHeader>
@@ -134,7 +121,7 @@ export function UsersCount({ refresh }: { refresh: number }) {
               </PieChart>
             </ChartContainer>
 
-            <div className="grid grid-cols-3 gap-4 pt-2">
+            <div className="grid grid-cols-2 gap-4 pt-2">
               {chartData.map((item) => (
                 <div key={item.role} className="flex flex-col rounded-lg border p-3">
                   <div className="flex items-center justify-between">
@@ -152,8 +139,8 @@ export function UsersCount({ refresh }: { refresh: number }) {
         ) : (
           <div className="flex h-[250px] flex-col items-center justify-center gap-2 rounded-lg border border-dashed p-8 text-center">
             <Users className="h-10 w-10 text-muted-foreground/50" />
-            <h3 className="text-lg font-medium">No Users Found</h3>
-            <p className="text-sm text-muted-foreground">User data will appear here once available.</p>
+            <h3 className="text-lg font-medium">No Accounts Found</h3>
+            <p className="text-sm text-muted-foreground">Account data will appear here once available.</p>
           </div>
         )}
       </CardContent>

@@ -60,7 +60,7 @@ const FormSchema = z.object({
   accountId: z.string().min(10, {message: "Account ID must have atleast 10 characters"}),
   name: z.string().min(1, {message: "Name is required"}),
   email: z.string(),
-  role: z.enum(["Admin", "Student", "Staff"], {message: "Invalid role"}),
+  role: z.enum(["Admin", "User"], {message: "Invalid role"}),
   status: z.enum(["Available", "Blocked"], {message: "Invalid status"})
 })
 
