@@ -68,7 +68,7 @@ const getAqiMessage = (aqi: number) => {
     condition: 'Serious'
   };
   if (aqi <= 280) return {
-    message: "Advisory: Air quality is very dangerous. Everyone should avoid outdoor activities and move far from areas with poor air quality. Vulnerable individuals should prioritize safety and avoid exposure.",
+    message: "Advisory: Air quality is very dangerous. Everyone should far from areas with poor air quality. Vulnerable individuals should prioritize safety and avoid exposure.",
     subject: "Air Quality: Very High - Urgent",
     risk: 'Very High Risk',
     condition: 'Severe'
