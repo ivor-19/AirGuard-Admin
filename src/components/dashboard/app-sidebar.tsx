@@ -93,7 +93,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   
   return (
     <Sidebar collapsible="icon" {...props}>
-      <SidebarHeader>
+      <SidebarHeader onClick={() => router.push('/admin/')}>
         <TeamSwitcher teams={data.teams} />
       </SidebarHeader>
       <SidebarContent className="font-geist">

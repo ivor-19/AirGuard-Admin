@@ -120,7 +120,11 @@ export function TimelineStepper({ steps, initialStep = 0, onChange }: TimelineSt
                             getAqiColor(step.aqi),
                           )}
                         >
-                          AQI: {step.aqi}
+                          {step.aqi >= 500 ? (
+                            <>AQI: 500+</>
+                          ):( 
+                            <>AQI: {step.aqi}</>
+                          )}
                         </span>
                       </div>
 
@@ -132,16 +136,36 @@ export function TimelineStepper({ steps, initialStep = 0, onChange }: TimelineSt
                         <div className="mt-3 space-y-2">
                           <div className="grid grid-cols-2 gap-2 text-sm">
                             <div>
-                              <span className="text-muted-foreground">PM 2.5:</span> {step.pm2_5}
+                              <span className="text-muted-foreground">PM 2.5:</span>
+                              {step.pm2_5 >= 500 ? (
+                                <>500+</>
+                              ):( 
+                                <>{step.pm2_5}</>
+                              )}
                             </div>
                             <div>
-                              <span className="text-muted-foreground">PM 10:</span> {step.pm10}
+                              <span className="text-muted-foreground">PM 10:</span>
+                              {step.pm10 >= 500 ? (
+                                <>500+</>
+                              ):( 
+                                <>{step.pm10}</>
+                              )}
                             </div>
                             <div>
-                              <span className="text-muted-foreground">CO:</span> {step.co}
+                              <span className="text-muted-foreground">CO:</span>
+                              {step.co >= 500 ? (
+                                <>500+</>
+                              ):( 
+                                <>{step.co}</>
+                              )}
                             </div>
                             <div>
-                              <span className="text-muted-foreground">NO2:</span> {step.no2}
+                              <span className="text-muted-foreground">NO2:</span>
+                              {step.no2 >= 500 ? (
+                                <>500+</>
+                              ):( 
+                                <>{step.no2}</>
+                              )}
                             </div>
                             <div>
                               <span className="text-muted-foreground">Announced by:</span> {step.scanned_by}
