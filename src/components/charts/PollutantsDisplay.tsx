@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { cn } from "@/lib/utils"
 import { AnnouncementModal } from "../modals/AnnouncementModal"
 import { Skeleton } from "../ui/skeleton"
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip"
 
 interface AQILevel {
   max: number
@@ -165,11 +166,22 @@ export function PollutantsDisplay() {
               <CardDescription>Real-time AQI Monitoring</CardDescription>
             </div>
             <div className="flex gap-2 mt-2">
-              {readings?.status === "on" ? (
-                <div className="bg-green-400 h-3 w-3 rounded-full"></div>
-              ):(
-                <div className="bg-red-800 h-3 w-3 rounded-full"></div>
-              )}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                {readings?.status === "on" ? (
+                  <div className="bg-green-400 h-3 w-3 rounded-full"></div>
+                ):(
+                  <div className="bg-red-800 h-3 w-3 rounded-full"></div>
+                )}
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-xs font-geist">
+                {readings?.status === "on" ? (
+                  <span className="text-xs">Hardware device is running...</span>
+                ):(
+                  <span className="text-xs">Hardware device is off</span>
+                )}
+              </TooltipContent>
+            </Tooltip>
             </div>
           </CardHeader>
           <CardContent className="p-0">
