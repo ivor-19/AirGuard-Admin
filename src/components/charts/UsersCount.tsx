@@ -61,7 +61,7 @@ export function UsersCount({ refresh }: { refresh: number }) {
     users: {
       label: "Users",
     },
-    userR: {
+    user: {
       label: "User/s",
       color: "#10b981",
     },
@@ -125,7 +125,10 @@ export function UsersCount({ refresh }: { refresh: number }) {
               {chartData.map((item) => (
                 <div key={item.role} className="flex flex-col rounded-lg border p-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium capitalize">{item.role}s</span>
+                    <div className="flex items-center">
+                      <span className="text-sm font-medium capitalize">{item.role}</span>
+                      <span className="text-sm">/s</span>
+                    </div>
                     <span className="h-3 w-3 rounded-full" style={{ backgroundColor: item.fill }} />
                   </div>
                   <div className="mt-1 flex items-baseline justify-between">
